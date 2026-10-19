@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.venv/
+env/
+venv/
+.env
+rf_model.pkl
+le_bin_id.pkl
+
+# Frontend
+web/node_modules/
+web/dist/
+web/.vite/
+web/.env
+
+# Backend
+api/node_modules/
+api/dist/
+api/build/
+api/.env
