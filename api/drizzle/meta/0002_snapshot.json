@@ -1,0 +1,316 @@
+{
+  "id": "7c4b6180-b60e-4be3-9dc5-9a37dc34dc8b",
+  "prevId": "7a310216-dc2f-48a9-bcb5-4d32020c348e",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.smart_bins": {
+      "name": "smart_bins",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "latitude": {
+          "name": "latitude",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "longitude": {
+          "name": "longitude",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_depth_cm": {
+          "name": "total_depth_cm",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_capacity_kg": {
+          "name": "max_capacity_kg",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "bin_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'ACTIVE'"
+        },
+        "current_fill_level": {
+          "name": "current_fill_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "needs_collection": {
+          "name": "needs_collection",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "last_updated": {
+          "name": "last_updated",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.routes": {
+      "name": "routes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "assigned_car_id": {
+          "name": "assigned_car_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "waypoints_order": {
+          "name": "waypoints_order",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "total_distance_km": {
+          "name": "total_distance_km",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_completed": {
+          "name": "is_completed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "routes_assigned_car_id_vehicles_id_fk": {
+          "name": "routes_assigned_car_id_vehicles_id_fk",
+          "tableFrom": "routes",
+          "tableTo": "vehicles",
+          "columnsFrom": [
+            "assigned_car_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.sensor_data": {
+      "name": "sensor_data",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "bin_id": {
+          "name": "bin_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "measure_distance_cm": {
+          "name": "measure_distance_cm",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fill_percentage": {
+          "name": "fill_percentage",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "battery_voltage": {
+          "name": "battery_voltage",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "recorded_at": {
+          "name": "recorded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "sensor_data_bin_id_smart_bins_id_fk": {
+          "name": "sensor_data_bin_id_smart_bins_id_fk",
+          "tableFrom": "sensor_data",
+          "tableTo": "smart_bins",
+          "columnsFrom": [
+            "bin_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.vehicles": {
+      "name": "vehicles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_code": {
+          "name": "user_code",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "vehicle_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'DRIVER'"
+        },
+        "max_capacity_kg": {
+          "name": "max_capacity_kg",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "vehicles_user_code_unique": {
+          "name": "vehicles_user_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.bin_status": {
+      "name": "bin_status",
+      "schema": "public",
+      "values": [
+        "ACTIVE",
+        "DAMAGED",
+        "OUT_OF_SERVICE"
+      ]
+    },
+    "public.vehicle_role": {
+      "name": "vehicle_role",
+      "schema": "public",
+      "values": [
+        "ADMIN",
+        "DRIVER"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
