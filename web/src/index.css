@@ -1,0 +1,189 @@
+@import 'leaflet/dist/leaflet.css';
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Unified WasteWise palette — Catppuccin Mocha + purple/blue/orange ── */
+:root {
+    /* Backgrounds */
+    --bg:       #1e1e2e;
+    --panel:    #181825;
+    --panel2:   #313244;
+    --border:   #45475a;
+    --border2:  #585b70;
+
+    /* Text */
+    --text:     #cdd6f4;
+    --muted:    #bac2de;
+    --soft:     #a6adc8;
+    --dim:      #6c7086;
+
+    /* Accents */
+    --purple:   #cba6f7;
+    --lavender: #b4befe;
+    --blue:     #89b4fa;
+    --orange:   #fab387;
+    --green:    #a6e3a1;
+    --red:      #f38ba8;
+    --yellow:   #f9e2af;
+
+    /* Semantic */
+    --accent:        var(--purple);
+    --accent-2:      var(--blue);
+    --accent-glow:   rgba(203, 166, 247, 0.15);
+    --blue-glow:     rgba(137, 180, 250, 0.15);
+    --warn:          var(--orange);
+    --warn-glow:     rgba(250, 179, 135, 0.15);
+    --success:       var(--green);
+    --danger:        var(--red);
+    --danger-glow:   rgba(243, 139, 168, 0.12);
+    --on-accent:     #11111b;
+
+    /* ── Admin terminal token aliases ── */
+    --t-bg:           var(--bg);
+    --t-panel:        var(--panel);
+    --t-panel2:       var(--panel2);
+    --t-border:       var(--border);
+    --t-border-bright:var(--border2);
+    --t-text:         var(--text);
+    --t-text-dim:     var(--muted);
+    --t-muted:        var(--dim);
+    --t-soft:         var(--soft);
+    --t-accent:       var(--purple);
+    --t-accent2:      var(--blue);
+    --t-warn:         var(--orange);
+    --t-danger:       var(--red);
+    --t-danger-bg:    var(--danger-glow);
+
+    /* ── Driver token aliases (same palette, different font/layout) ── */
+    --d-bg:              var(--bg);
+    --d-panel:           var(--panel);
+    --d-panel2:          var(--panel2);
+    --d-border:          var(--border);
+    --d-border-strong:   var(--border2);
+    --d-text:            var(--text);
+    --d-muted:           var(--muted);
+    --d-soft:            var(--soft);
+    --d-accent:          var(--purple);
+    --d-accent-hover:    var(--lavender);
+    --d-accent-light:    var(--accent-glow);
+    --d-accent-blue:     var(--blue);
+    --d-accent-blue-light:var(--blue-glow);
+    --d-warn:            var(--orange);
+    --d-warn-light:      var(--warn-glow);
+    --d-danger:          var(--red);
+    --d-danger-light:    var(--danger-glow);
+
+    /* ── Legacy aliases (kept for any remaining references) ── */
+    --color-app:       var(--bg);
+    --color-panel:     var(--panel);
+    --color-panel-2:   var(--panel2);
+    --color-line:      var(--border);
+    --color-main:      var(--text);
+    --color-muted:     var(--muted);
+    --color-soft:      var(--soft);
+    --color-accent:    var(--purple);
+    --color-accent-strong: var(--blue);
+    --color-on-accent: var(--on-accent);
+    --color-success:   var(--green);
+    --color-warning:   var(--orange);
+    --color-danger:    var(--red);
+    --color-danger-bg: var(--danger-glow);
+    --color-empty-bg:  rgba(49, 50, 68, 0.5);
+    --color-map-bg:    var(--panel);
+}
+
+html, body, #root {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* ── Native select reset — force dark bg on all selects and their options ── */
+select {
+    background-color: var(--panel2);
+    color: var(--text);
+    border-color: var(--border);
+}
+select option {
+    background-color: var(--panel2);
+    color: var(--text);
+}
+
+/* ── Admin terminal panel style ── */
+.t-panel {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.t-panel-header {
+    border-bottom: 1px solid var(--border);
+    padding: 8px 12px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--purple);
+    background: var(--panel2);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── Bin done flash ring (Leaflet SVG path animation) ── */
+@keyframes bin-flash {
+    0%   { opacity: 0.9; }
+    60%  { opacity: 0.4; }
+    100% { opacity: 0; }
+}
+.bin-done-flash {
+    animation: bin-flash 0.75s ease-out forwards;
+    pointer-events: none !important;
+}
+
+/* ── Cursor blink ── */
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+}
+.cursor-blink { animation: blink 1s step-end infinite; }
+
+/* ── Slide up ── */
+@keyframes slide-up {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+.slide-up { animation: slide-up 0.22s ease forwards; }
+
+/* ── Modal animations ── */
+@keyframes modal-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes modal-pop-in {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.confirm-overlay {
+    background: rgba(17, 17, 27, 0.82);
+    animation: modal-fade-in 0.2s ease forwards;
+    backdrop-filter: blur(4px);
+}
+.confirm-card { animation: modal-pop-in 0.24s ease forwards; }
+
+/* ── Leaflet z-index fixes ── */
+.leaflet-pane         { z-index: 4 !important; }
+.leaflet-top,
+.leaflet-bottom       { z-index: 5 !important; }
+
+/* ── Scrollbars (shared) ── */
+.t-scroll::-webkit-scrollbar,
+.d-scroll::-webkit-scrollbar       { width: 4px; }
+.t-scroll::-webkit-scrollbar-track,
+.d-scroll::-webkit-scrollbar-track { background: var(--panel); }
+.t-scroll::-webkit-scrollbar-thumb,
+.d-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
