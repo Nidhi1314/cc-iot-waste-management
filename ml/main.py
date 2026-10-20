@@ -194,51 +194,59 @@ def predictive_cvrp(payload: PredictiveOptimizeRequest):
     içeren bir rota oluşturur.
     """
     try:
-        # Modeli yükle
-        if not os.path.exists('rf_model.pkl') or not os.path.exists('le_bin_id.pkl'):
-            return {"status": "error", "message": "ML modeli bulunamadı. Lütfen önce /ml/train-model endpoint'ini çağırın."}
-            
-        model = joblib.load('rf_model.pkl')
-        le = joblib.load('le_bin_id.pkl')
-        
         now = datetime.now()
         target_time = now + timedelta(hours=payload.hours_ahead)
         target_is_weekend = 1 if target_time.weekday() >= 5 else 0
         
-        predicted_critical_bins = []
-        
-        # Known bins by encoder (to prevent un-seen bin errors)
-        known_bins = set(le.classes_)
-        
-        # Tahmin yap
-        for bin_obj in payload.bins:
-            if bin_obj.id not in known_bins:
-                continue # Yeni eklenmiş ve henüz eğitilmemiş bir çöp kutusu, atla
-                
-            bin_id_encoded = le.transform([bin_obj.id])[0]
-            
-            features = pd.DataFrame([{
-                'bin_id_encoded': bin_id_encoded,
-                'hour': now.hour,
-                'is_weekend': target_is_weekend
-            }])
-            
-            predicted_increase_4h = model.predict(features)[0]
-            predicted_increase = (predicted_increase_4h / 4.0) * payload.hours_ahead
-            
-            future_fill_level = min(100.0, bin_obj.current_fill_level + predicted_increase)
-            
-            # Tahmini doluluk %75 ve üstüyse (veya zaten 75'in üstündeyse) rotaya ekle
-            if future_fill_level >= 75.0:
-                predicted_bin = BinInput(
-                    id=bin_obj.id,
-                    lat=bin_obj.lat,
-                    lng=bin_obj.lng,
-                    current_fill_level=future_fill_level,
-                    max_capacity_kg=bin_obj.max_capacity_kg
+        predicted_critical_bins = [
+            bin_obj for bin_obj in payload.bins
+            if bin_obj.current_fill_level >= 75.0
+        ]
+        bins_to_predict = [
+            bin_obj for bin_obj in payload.bins
+            if bin_obj.current_fill_level < 75.0
+        ]
+
+        if bins_to_predict:
+            if not os.path.exists('rf_model.pkl') or not os.path.exists('le_bin_id.pkl'):
+                return {"status": "error", "message": "ML modeli bulunamadı. Lütfen önce /ml/train-model endpoint'ini çağırın."}
+
+            model = joblib.load('rf_model.pkl')
+            le = joblib.load('le_bin_id.pkl')
+
+            # Known bins by encoder (to prevent unseen-bin errors)
+            known_bins = set(le.classes_)
+
+            for bin_obj in bins_to_predict:
+                if bin_obj.id not in known_bins:
+                    continue # Yeni eklenmiş ve henüz eğitilmemiş bir çöp kutusu, atla
+
+                bin_id_encoded = le.transform([bin_obj.id])[0]
+
+                features = pd.DataFrame([{
+                    'bin_id_encoded': bin_id_encoded,
+                    'hour': now.hour,
+                    'is_weekend': target_is_weekend
+                }])
+
+                predicted_increase_4h = model.predict(features)[0]
+                predicted_increase = (predicted_increase_4h / 4.0) * payload.hours_ahead
+
+                future_fill_level = min(
+                    100.0, bin_obj.current_fill_level + predicted_increase
                 )
-                predicted_critical_bins.append(predicted_bin)
-                
+
+                if future_fill_level >= 75.0:
+                    predicted_critical_bins.append(
+                        BinInput(
+                            id=bin_obj.id,
+                            lat=bin_obj.lat,
+                            lng=bin_obj.lng,
+                            current_fill_level=future_fill_level,
+                            max_capacity_kg=bin_obj.max_capacity_kg
+                        )
+                    )
+
         if not predicted_critical_bins:
             return {"status": "info", "message": f"{payload.hours_ahead} saat içinde %75'i geçecek çöp kutusu tahmin edilmiyor."}
             
