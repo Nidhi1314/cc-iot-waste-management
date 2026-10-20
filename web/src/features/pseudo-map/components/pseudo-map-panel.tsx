@@ -54,7 +54,7 @@ export function PseudoMapPanel({
           <polyline
             fill="none"
             points={routePoints.map((p) => `${p.x},${p.y}`).join(' ')}
-            stroke="#89b4fa"
+            stroke="#0b5cff"
             strokeWidth="2"
           />
         ) : null}
@@ -74,7 +74,7 @@ export function PseudoMapPanel({
                 cy={point.y}
                 fill={getBinColor(bin)}
                 r={selectedBinId === bin.id ? 7 : 5}
-                stroke="#cdd6f4"
+                stroke="#ffffff"
               />
             </g>
           );
@@ -87,7 +87,7 @@ export function PseudoMapPanel({
             x={point.x}
             y={point.y - 12} // Dairenin biraz yukarısı
             fontSize="10"
-            fill="#cdd6f4"
+            fill="#0f172a"
             fontWeight="bold"
             textAnchor="middle"
             className="pointer-events-none drop-shadow-md"
@@ -137,7 +137,7 @@ function normalizeBins(bins: SmartBin[]) {
 }
 
 function getBinColor(bin: SmartBin) {
-  if (bin.status === 'DAMAGED' || bin.status === 'OUT_OF_SERVICE') return '#f38ba8';
-  if (bin.needsCollection) return '#f9e2af';
-  return '#a6e3a1';
+  if (bin.status === 'DAMAGED' || bin.status === 'OUT_OF_SERVICE') return '#dc2626';
+  if (bin.needsCollection) return '#d97706';
+  return '#15803d';
 }

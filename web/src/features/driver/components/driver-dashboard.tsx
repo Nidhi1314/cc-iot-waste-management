@@ -664,7 +664,7 @@ function DriverPseudoMap({
             <line
               className="driver-route-segment"
               key={`${selectedRoute?.id ?? 'none'}-${segment.index}`}
-              stroke={progressByWaypointKey[segment.to.waypointKey] ? '#a6e3a1' : '#89b4fa'}
+              stroke={progressByWaypointKey[segment.to.waypointKey] ? '#15803d' : '#0b5cff'}
               strokeDasharray={segment.length}
               strokeDashoffset={segment.length}
               strokeLinecap="round"
@@ -694,7 +694,7 @@ function DriverPseudoMap({
                 fill={getBinColor(bin)}
                 opacity={0.75}
                 r={5}
-                stroke="#cdd6f4"
+                stroke="#ffffff"
                 strokeWidth={selectedBinId === bin.id ? 2 : 1}
               />
             </g>
@@ -719,7 +719,7 @@ function DriverPseudoMap({
                   fill="none"
                   opacity={0.8}
                   r={22}
-                  stroke="#89b4fa"
+                  stroke="#0b5cff"
                   strokeWidth={2}
                 />
               ) : null}
@@ -727,15 +727,15 @@ function DriverPseudoMap({
                 cx={point.x}
                 cy={point.y}
                 fill={
-                  isDone ? '#a6e3a1' : isNextStop ? '#89b4fa' : '#cba6f7'
+                  isDone ? '#15803d' : isNextStop ? '#0b5cff' : '#1d4ed8'
                 }
                 r={radius}
-                stroke="#11111b"
+                stroke="#ffffff"
                 strokeWidth={isSelected ? 3 : 2}
               />
               <text
                 dominantBaseline="middle"
-                fill="#11111b"
+                fill="#0f172a"
                 fontSize="12"
                 fontWeight="700"
                 textAnchor="middle"
@@ -800,9 +800,9 @@ function normalizeBins(bins: SmartBin[]) {
 }
 
 function getBinColor(bin: SmartBin) {
-  if (bin.status === 'DAMAGED' || bin.status === 'OUT_OF_SERVICE') return '#f38ba8';
-  if (bin.needsCollection) return '#f9e2af';
-  return '#a6e3a1';
+  if (bin.status === 'DAMAGED' || bin.status === 'OUT_OF_SERVICE') return '#dc2626';
+  if (bin.needsCollection) return '#d97706';
+  return '#15803d';
 }
 
 function getOrderedStops(route: RouteItem) {

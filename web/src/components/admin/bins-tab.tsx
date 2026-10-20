@@ -22,7 +22,7 @@ function SortHeader({
 }) {
   return (
     <th
-      className="cursor-pointer select-none px-3 py-2 text-left text-[10px] uppercase tracking-wider text-terminalMuted hover:text-terminalAccent"
+      className="cursor-pointer select-none px-4 py-3 text-left text-xs font-semibold text-terminalMuted hover:text-terminalAccent"
       onClick={() => onSort(k)}
     >
       {label} {sortKey === k ? (sortDir === 'asc' ? '↑' : '↓') : '↕'}
@@ -31,12 +31,13 @@ function SortHeader({
 }
 
 function AsciiBar({ pct }: { pct: number }) {
-  const filled = Math.round(pct / 10);
-  const empty = 10 - filled;
-  const color = pct >= 75 ? 'text-terminalWarn' : pct >= 50 ? 'text-yellow-500' : 'text-terminalAccent';
+  const color = pct >= 75 ? 'bg-amber-500' : pct >= 50 ? 'bg-blue-400' : 'bg-terminalAccent';
   return (
-    <span className={`font-mono text-xs ${color}`}>
-      [{'█'.repeat(filled)}{'░'.repeat(empty)}] {String(pct).padStart(3, ' ')}%
+    <span className="flex min-w-32 items-center gap-3">
+      <span className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+        <span className={`block h-full rounded-full ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
+      </span>
+      <span className="w-10 text-right text-xs font-semibold text-terminalText">{pct}%</span>
     </span>
   );
 }
@@ -73,13 +74,12 @@ export function BinsTab({ bins }: Props) {
   };
 
   return (
-    <div className="flex h-[calc(100vh-56px)] flex-col font-mono">
-      <div className="flex flex-wrap items-center gap-3 border-b border-terminalBorder bg-terminalPanel2 p-4">
-        <div className="flex items-center gap-2 rounded border border-terminalBorder bg-terminal px-3 py-1.5 text-xs">
-          <span className="text-terminalAccent">{'>'}</span>
+    <div className="flex h-[calc(100vh-56px)] flex-col">
+      <div className="flex flex-wrap items-center gap-3 border-b border-terminalBorder bg-terminalPanel px-5 py-4">
+        <div className="flex items-center gap-2 rounded-xl border border-terminalBorder bg-terminalPanel2 px-3 py-2 text-sm">
           <input
             className="bg-transparent text-terminalText placeholder-terminalMuted focus:outline-none"
-            placeholder="search address..."
+            placeholder="Search address..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -88,15 +88,15 @@ export function BinsTab({ bins }: Props) {
           {(['ALL', 'ACTIVE', 'CRITICAL', 'DAMAGED'] as FilterStatus[]).map((s) => (
             <button
               key={s}
-              className={`rounded border px-2 py-1 text-[10px] font-bold transition-colors ${
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                 filterStatus === s
-                  ? 'border-terminalAccent bg-terminalAccent/10 text-terminalAccent'
-                  : 'border-terminalBorder text-terminalMuted hover:border-terminalAccent'
+                  ? 'border-terminalAccent bg-terminalAccent text-white'
+                  : 'border-terminalBorder bg-white text-terminalMuted hover:border-terminalAccent'
               }`}
               onClick={() => setFilterStatus(s)}
               type="button"
             >
-              [{s}]
+              {s === 'ALL' ? 'All' : s === 'ACTIVE' ? 'Active' : s === 'CRITICAL' ? 'Critical' : 'Damaged'}
             </button>
           ))}
         </div>
@@ -104,45 +104,45 @@ export function BinsTab({ bins }: Props) {
       </div>
 
       <div className="t-scroll flex-1 overflow-auto">
-        <table className="min-w-full text-left text-xs">
+        <table className="min-w-[760px] w-full text-left text-sm">
           <thead className="sticky top-0 bg-terminalPanel2">
             <tr className="border-b border-terminalBorder">
-              <SortHeader k="address" label="ADDRESS" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-              <SortHeader k="status" label="STATUS" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-              <SortHeader k="fill" label="FILL_LEVEL" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
-              <th className="px-3 py-2 text-[10px] uppercase tracking-wider text-terminalMuted">NEEDS_COLL</th>
-              <SortHeader k="updated" label="LAST_UPDATED" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+              <SortHeader k="address" label="Address" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+              <SortHeader k="status" label="Status" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+              <SortHeader k="fill" label="Fill level" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
+              <th className="px-4 py-3 text-xs font-semibold text-terminalMuted">Needs collection</th>
+              <SortHeader k="updated" label="Last updated" sortKey={sortKey} sortDir={sortDir} onSort={toggleSort} />
             </tr>
           </thead>
           <tbody>
             {filtered.map((bin) => (
-              <tr key={bin.id} className="border-b border-terminalBorder/50 hover:bg-terminalPanel2/60">
-                <td className="px-3 py-2 text-terminalText">{bin.address}</td>
-                <td className="px-3 py-2">
-                  <span className={`rounded border px-1.5 py-0.5 text-[10px] font-bold ${
+              <tr key={bin.id} className="border-b border-terminalBorder/50 hover:bg-blue-50/70">
+                <td className="px-4 py-3 text-terminalText">{bin.address}</td>
+                <td className="px-4 py-3">
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                     bin.status === 'ACTIVE'
-                      ? 'border-terminalAccent text-terminalAccent'
+                      ? 'bg-emerald-100 text-emerald-800'
                       : bin.status === 'DAMAGED'
-                      ? 'border-terminalDanger text-terminalDanger'
-                      : 'border-terminalWarn text-terminalWarn'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-amber-100 text-amber-800'
                   }`}>
-                    [{bin.status}]
+                    {bin.status.replaceAll('_', ' ')}
                   </span>
                 </td>
-                <td className="px-3 py-2"><AsciiBar pct={bin.currentFillLevel} /></td>
-                <td className="px-3 py-2">
-                  <span className={bin.needsCollection ? 'text-terminalWarn' : 'text-terminalMuted'}>
-                    {bin.needsCollection ? '[YES]' : '[NO]'}
+                <td className="px-4 py-3"><AsciiBar pct={bin.currentFillLevel} /></td>
+                <td className="px-4 py-3">
+                  <span className={bin.needsCollection ? 'rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800' : 'text-terminalMuted'}>
+                    {bin.needsCollection ? 'Yes' : 'No'}
                   </span>
                 </td>
-                <td className="px-3 py-2 text-terminalMuted">{formatDateTime(bin.lastUpdated)}</td>
+                <td className="px-4 py-3 text-xs text-terminalMuted">{formatDateTime(bin.lastUpdated)}</td>
               </tr>
             ))}
           </tbody>
         </table>
         {filtered.length === 0 && (
           <div className="p-8 text-center text-terminalMuted">
-            {'// no results matching filter'}
+            No bins match the current filters.
           </div>
         )}
       </div>

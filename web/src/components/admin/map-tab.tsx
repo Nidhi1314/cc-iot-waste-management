@@ -9,12 +9,13 @@ type Props = {
 };
 
 function FillBar({ pct }: { pct: number }) {
-  const filled = Math.round(pct / 10);
-  const empty = 10 - filled;
-  const color = pct >= 75 ? 'text-terminalWarn' : 'text-terminalAccent';
+  const color = pct >= 75 ? 'bg-amber-500' : 'bg-terminalAccent';
   return (
-    <span className={`font-mono text-xs ${color}`}>
-      [{'█'.repeat(filled)}{'░'.repeat(empty)}] {pct}%
+    <span className="inline-flex min-w-28 items-center gap-2">
+      <span className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+        <span className={`block h-full rounded-full ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
+      </span>
+      <span className="text-xs font-semibold text-terminalText">{pct}%</span>
     </span>
   );
 }
@@ -27,24 +28,24 @@ export function MapTab({ bins, routes }: Props) {
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? null;
 
   return (
-    <div className="relative flex h-[calc(100vh-56px)] font-mono">
+    <div className="relative flex h-[calc(100vh-56px)]">
       <div className="flex-1">
         <WasteMap
           bins={bins}
           route={selectedRoute}
           onSelectBin={setSelectedBinId}
           selectedBinId={selectedBinId}
-          theme="dark"
+          theme="light"
           className="h-full w-full"
         />
       </div>
 
       {/* Floating route selector */}
-      <div className="absolute left-3 top-3 z-[999] rounded border border-terminalBorder bg-terminal p-2">
-        <p className="mb-1 text-[10px] uppercase tracking-widest text-terminalMuted">ROUTE_OVERLAY</p>
+      <div className="absolute left-3 top-3 z-[999] rounded-2xl border border-terminalBorder bg-white p-3 shadow-lg">
+        <p className="mb-1 text-xs font-semibold text-terminalMuted">Route overlay</p>
         <div className="relative">
           <select
-            className="w-full appearance-none rounded-lg border border-terminalBorder bg-terminalPanel2 px-2 py-1 pr-6 text-xs text-terminalText focus:border-terminalAccent focus:outline-none"
+            className="w-full appearance-none rounded-xl border border-terminalBorder bg-white px-3 py-2 pr-7 text-sm text-terminalText focus:border-terminalAccent focus:outline-none"
             value={selectedRouteId}
             onChange={(e) => setSelectedRouteId(e.target.value)}
           >
@@ -61,28 +62,28 @@ export function MapTab({ bins, routes }: Props) {
 
       {/* Bin detail panel */}
       {selectedBin && (
-        <div className="slide-up absolute right-3 top-3 z-[999] w-72 rounded border border-terminalBorder bg-terminal p-4">
+        <div className="slide-up absolute right-3 top-3 z-[999] w-72 rounded-2xl border border-terminalBorder bg-white p-4 shadow-xl">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-widest text-terminalMuted">BIN_DETAIL</p>
+            <p className="text-xs font-semibold text-terminalMuted">Bin details</p>
             <button
               className="text-terminalMuted hover:text-terminalDanger"
               onClick={() => setSelectedBinId(null)}
               type="button"
             >
-              [×]
+              ×
             </button>
           </div>
           <div className="mt-3 space-y-2 text-xs">
             <div>
-              <span className="text-terminalMuted">ADDRESS: </span>
+              <span className="text-terminalMuted">Address: </span>
               <span className="text-terminalText">{selectedBin.address}</span>
             </div>
             <div>
-              <span className="text-terminalMuted">FILL_LVL: </span>
+              <span className="text-terminalMuted">Fill level: </span>
               <FillBar pct={selectedBin.currentFillLevel} />
             </div>
             <div>
-              <span className="text-terminalMuted">STATUS: </span>
+              <span className="text-terminalMuted">Status: </span>
               <span className={
                 selectedBin.status === 'ACTIVE'
                   ? 'text-terminalAccent'
@@ -90,22 +91,22 @@ export function MapTab({ bins, routes }: Props) {
                   ? 'text-terminalDanger'
                   : 'text-terminalWarn'
               }>
-                [{selectedBin.status}]
+                {selectedBin.status.replaceAll('_', ' ')}
               </span>
             </div>
             <div>
-              <span className="text-terminalMuted">NEEDS_COLL: </span>
+              <span className="text-terminalMuted">Needs collection: </span>
               <span className={selectedBin.needsCollection ? 'text-terminalWarn' : 'text-terminalAccent'}>
-                {selectedBin.needsCollection ? '[YES]' : '[NO]'}
+                {selectedBin.needsCollection ? 'Yes' : 'No'}
               </span>
             </div>
             <div>
-              <span className="text-terminalMuted">CAPACITY: </span>
+              <span className="text-terminalMuted">Capacity: </span>
               <span className="text-terminalText">{selectedBin.maxCapacityKg}kg</span>
             </div>
             <div>
-              <span className="text-terminalMuted">UPDATED: </span>
-              <span className="text-terminalText">{formatDateTime(selectedBin.lastUpdated)}</span>
+              <span className="text-terminalMuted">Updated: </span>
+              <span className="font-mono text-xs text-terminalText">{formatDateTime(selectedBin.lastUpdated)}</span>
             </div>
             <div>
               <span className="text-terminalMuted">LAT/LNG: </span>
@@ -116,10 +117,10 @@ export function MapTab({ bins, routes }: Props) {
       )}
 
       {/* Legend */}
-      <div className="absolute bottom-3 left-3 z-[999] rounded border border-terminalBorder bg-terminal p-2 text-[10px] font-mono">
-        <div className="flex items-center gap-1.5 text-terminalAccent"><span className="inline-block h-2 w-2 rounded-full bg-green-500" /> NORMAL</div>
-        <div className="flex items-center gap-1.5 text-terminalWarn"><span className="inline-block h-2 w-2 rounded-full bg-yellow-400" /> CRITICAL</div>
-        <div className="flex items-center gap-1.5 text-terminalDanger"><span className="inline-block h-2 w-2 rounded-full bg-red-500" /> DAMAGED</div>
+      <div className="absolute bottom-3 left-3 z-[999] rounded-2xl border border-terminalBorder bg-white p-3 text-xs shadow-lg">
+        <div className="flex items-center gap-1.5 text-terminalAccent"><span className="inline-block h-2 w-2 rounded-full bg-green-500" /> Normal</div>
+        <div className="flex items-center gap-1.5 text-terminalWarn"><span className="inline-block h-2 w-2 rounded-full bg-yellow-500" /> Critical</div>
+        <div className="flex items-center gap-1.5 text-terminalDanger"><span className="inline-block h-2 w-2 rounded-full bg-red-500" /> Damaged</div>
       </div>
     </div>
   );

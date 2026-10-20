@@ -25,10 +25,10 @@ type DriverShellProps = {
 type AllProgress = Record<string, Record<string, boolean>>;
 
 const NAV_ITEMS: { id: DriverTab; icon: string; label: string }[] = [
-  { id: 'route',   icon: '>_', label: 'ROUTE' },
-  { id: 'map',     icon: '◈',  label: 'MAP' },
-  { id: 'summary', icon: '≡',  label: 'SUMMARY' },
-  { id: 'account', icon: '○',  label: 'ACCOUNT' },
+  { id: 'route',   icon: '↗', label: 'Route' },
+  { id: 'map',     icon: '◈', label: 'Map' },
+  { id: 'summary', icon: '≡', label: 'Summary' },
+  { id: 'account', icon: '○', label: 'Account' },
 ];
 
 function getKey(step: number, binId: string) {
@@ -110,7 +110,7 @@ export function DriverShell({
   const hasError = binsError || routesError;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-terminal font-mono" style={{ background: 'var(--t-bg)', color: 'var(--t-text)' }}>
+    <div className="flex h-screen overflow-hidden bg-terminal" style={{ background: 'var(--t-bg)', color: 'var(--t-text)' }}>
       {/* Sidebar — same structure as AdminShell */}
       <aside
         className="flex shrink-0 flex-col border-r border-terminalBorder bg-terminalPanel transition-all duration-200"
@@ -119,7 +119,7 @@ export function DriverShell({
         {/* Logo */}
         <div className="flex items-center justify-between border-b border-terminalBorder px-3 py-3.5">
           {sidebarExpanded && (
-            <span className="text-sm font-bold tracking-widest text-terminalAccent">[WW]</span>
+            <span className="text-sm font-extrabold tracking-tight text-terminalAccent">WW <span className="text-terminalText">WasteWise</span></span>
           )}
           <button
             className="ml-auto rounded p-1 text-terminalMuted hover:text-terminalAccent"
@@ -138,10 +138,10 @@ export function DriverShell({
             return (
               <button
                 key={item.id}
-                className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-xs transition-colors ${
+                className={`mx-2 flex w-[calc(100%-1rem)] items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition-colors ${
                   isActive
-                    ? 'border-l-2 border-terminalAccent bg-terminalAccent/10 text-terminalAccent'
-                    : 'border-l-2 border-transparent text-terminalMuted hover:bg-terminalPanel2 hover:text-terminalText'
+                    ? 'bg-terminalAccent text-white shadow-sm'
+                    : 'text-terminalMuted hover:bg-terminalPanel2 hover:text-terminalText'
                 }`}
                 onClick={() => setActiveTab(item.id)}
                 type="button"
@@ -149,7 +149,7 @@ export function DriverShell({
               >
                 <span className="w-4 shrink-0 text-center text-sm">{item.icon}</span>
                 {sidebarExpanded && (
-                  <span className="truncate text-[11px] font-semibold tracking-wider">{item.label}</span>
+                  <span className="truncate text-xs font-semibold">{item.label}</span>
                 )}
               </button>
             );
@@ -164,13 +164,13 @@ export function DriverShell({
             </p>
           )}
           <button
-            className="flex w-full items-center gap-2 rounded border border-terminalBorder px-2 py-1.5 text-[10px] text-terminalMuted hover:border-terminalDanger hover:text-terminalDanger"
+            className="flex w-full items-center gap-2 rounded-xl border border-terminalBorder px-3 py-2 text-xs font-medium text-terminalMuted hover:border-terminalDanger hover:bg-red-50 hover:text-terminalDanger"
             onClick={onLogout}
             type="button"
             title="Logout"
           >
             <span>⏻</span>
-            {sidebarExpanded && <span>LOGOUT</span>}
+            {sidebarExpanded && <span>Logout</span>}
           </button>
         </div>
       </aside>
@@ -178,28 +178,28 @@ export function DriverShell({
       {/* Main */}
       <main className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex items-center justify-between border-b border-terminalBorder bg-terminalPanel px-5 py-2.5 text-[11px] text-terminalMuted">
+        <div className="flex items-center justify-between border-b border-terminalBorder bg-terminalPanel px-5 py-3 text-xs text-terminalMuted">
           <span>
-            wastewise<span className="text-terminalAccent">/</span>
-            {activeTab}
-            <span className="cursor-blink text-terminalAccent"> _</span>
+            <span className="font-semibold text-terminalText">WasteWise</span>
+            <span className="px-2 text-slate-300">/</span>
+            <span className="capitalize">{activeTab}</span>
           </span>
-          <div className="flex items-center gap-3 text-[10px]">
+          <div className="flex flex-wrap items-center gap-3 text-xs">
             {activeRoute ? (
               <>
-                <span>route:<span className="text-terminalText">{activeRoute.id.slice(0, 8).toUpperCase()}</span></span>
-                <span>stops:<span className="text-terminalText">{completedCount}/{orderedStops.length}</span></span>
-                <span className={activeRoute.isCompleted ? 'text-terminalAccent' : 'text-terminalWarn'}>
-                  [{activeRoute.isCompleted ? 'DONE' : 'ACTIVE'}]
+                <span>Route <span className="font-mono text-terminalText">{activeRoute.id.slice(0, 8).toUpperCase()}</span></span>
+                <span>Stops <span className="text-terminalText">{completedCount}/{orderedStops.length}</span></span>
+                <span className={activeRoute.isCompleted ? 'rounded-full bg-emerald-100 px-2.5 py-1 font-semibold text-emerald-800' : 'rounded-full bg-blue-100 px-2.5 py-1 font-semibold text-blue-800'}>
+                  {activeRoute.isCompleted ? 'Done' : 'Active'}
                 </span>
               </>
             ) : (
-              <span className="text-terminalMuted">no_active_route</span>
+              <span className="text-terminalMuted">No active route</span>
             )}
             {routes.length > 1 && (
               <div className="relative">
                 <select
-                  className="appearance-none rounded border border-terminalBorder bg-terminalPanel2 px-2 py-0.5 pr-5 text-[10px] text-terminalText focus:border-terminalAccent focus:outline-none"
+                  className="appearance-none rounded-xl border border-terminalBorder bg-white px-3 py-1.5 pr-6 text-xs text-terminalText focus:border-terminalAccent focus:outline-none"
                   value={selectedRouteId ?? ''}
                   onChange={(e) => setSelectedRouteId(e.target.value || null)}
                 >

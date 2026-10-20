@@ -45,13 +45,13 @@ export function MlTerminalModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 font-mono"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
       onClick={(event) => {
         if (canClose && event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="flex w-full max-w-2xl flex-col overflow-hidden rounded-lg border border-terminalBorder bg-terminal shadow-2xl">
-        <div className="flex items-center justify-between border-b border-terminalBorder bg-terminalPanel2 px-4 py-2.5">
+      <div className="flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-terminalBorder bg-white px-5 py-4">
           <div className="flex items-center gap-2.5">
             <span
               className={`h-2.5 w-2.5 rounded-full ${
@@ -62,41 +62,41 @@ export function MlTerminalModal({
                     : 'bg-terminalDanger'
               }`}
             />
-            <span className="text-[11px] font-bold tracking-wider text-terminalText">
-              WASTEWISE_PREDICTIVE_ROUTING
+            <span className="text-sm font-bold text-terminalText">
+              Predictive route
             </span>
           </div>
           <button
-            className="rounded border border-terminalBorder px-2 py-0.5 text-[10px] text-terminalMuted hover:border-terminalDanger hover:text-terminalDanger disabled:cursor-not-allowed disabled:opacity-30"
+            className="rounded-full border border-terminalBorder px-3 py-1 text-xs text-terminalMuted hover:border-terminalDanger hover:text-terminalDanger disabled:cursor-not-allowed disabled:opacity-30"
             disabled={!canClose}
             onClick={onClose}
             type="button"
             title={canClose ? 'Close' : 'Wait for the API response'}
           >
-            [×]
+            Close
           </button>
         </div>
 
         <div
           ref={bodyRef}
-          className="t-scroll h-96 overflow-auto bg-terminal p-4 text-xs leading-relaxed"
+          className="t-scroll h-96 overflow-auto bg-slate-50 p-5 text-sm leading-relaxed"
         >
           <div className="font-bold text-terminalAccent">
-            {'> PREDICTIVE_ROUTE_REQUEST'}
+            Predictive route request
           </div>
           <div className="text-terminalMuted">
-            {'> Horizon: 24 hours | Input: current bin data and trained model'}
+            Horizon: 24 hours | Input: current bin data and trained model
           </div>
           <div className="my-2 text-terminalBorder">{'─'.repeat(54)}</div>
 
           {isPending ? (
             <>
-              <div className="text-terminalAccent2">{'> REQUEST_IN_PROGRESS'}</div>
+              <div className="font-semibold text-terminalAccent2">Request in progress</div>
               <div className="text-terminalMuted">
-                {'> The API is estimating future fill levels and optimizing collection stops...'}
+                The service is estimating future fill levels and optimizing collection stops...
               </div>
               <div className="mt-1 text-terminalWarn">
-                {'> Waiting for the actual API response'}
+                Waiting for the API response
                 <span className="cursor-blink"> _</span>
               </div>
             </>
@@ -105,19 +105,19 @@ export function MlTerminalModal({
               {result.success ? (
                 <>
                   <div className="font-bold text-terminalAccent">
-                    {'✓ API_RESPONSE_RECEIVED'}
+                    Request complete
                   </div>
                   <div className="mt-0.5 break-all text-terminalMuted">
                     {result.message}
                   </div>
                   <div className="mt-1 text-terminalMuted">
-                    {'// Values above are from the completed request'}
+                    Values above are from the completed request.
                   </div>
                 </>
               ) : (
                 <>
                   <div className="font-bold text-terminalDanger">
-                    {'✗ REQUEST_FAILED'}
+                    Request failed
                   </div>
                   <div className="mt-0.5 break-all text-terminalDanger">
                     {result.message}
@@ -127,12 +127,12 @@ export function MlTerminalModal({
             </div>
           ) : (
             <div className="text-terminalWarn">
-              {'> Waiting for the request result...'}
+              Waiting for the request result...
             </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-terminalBorder bg-terminalPanel px-4 py-2 text-[10px] text-terminalMuted">
+        <div className="flex items-center justify-between border-t border-terminalBorder bg-white px-5 py-3 text-xs text-terminalMuted">
           <span>
             {isPending
               ? 'request in progress...'
@@ -143,7 +143,7 @@ export function MlTerminalModal({
                   : 'waiting for response...'}
           </span>
           <span className={canClose ? 'text-terminalAccent' : 'opacity-40'}>
-            {canClose ? 'ready — [×] to close' : 'processing...'}
+            {canClose             ? 'Ready to close' : 'processing...'}
           </span>
         </div>
       </div>

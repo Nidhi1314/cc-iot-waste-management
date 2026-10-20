@@ -135,7 +135,7 @@ export function WasteMap({
       center={center}
       zoom={15}
       className={`w-full h-full ${className}`}
-      style={{ background: '#0a0a0a' }}
+      style={{ background: '#f8fafc' }}
       zoomControl={true}
     >
       <TileLayer
@@ -152,9 +152,9 @@ export function WasteMap({
             isRoutingLoading
               ? '#9ca3af' // gray while loading
               : route?.isCompleted
-              ? '#6c7086'
+              ? '#94a3b8'
               : theme === 'dark'
-              ? '#22d3ee'
+              ? '#0b5cff'
               : '#2563eb'
           }
           weight={route?.isCompleted ? 2 : 4}

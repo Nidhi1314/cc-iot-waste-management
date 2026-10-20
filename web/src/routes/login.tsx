@@ -36,20 +36,20 @@ export function LoginPage() {
   return (
     <main
       className="flex min-h-screen items-center justify-center p-4"
-      style={{ background: 'var(--t-bg)', fontFamily: '"JetBrains Mono", monospace' }}
+      style={{ background: 'linear-gradient(135deg, #0b5cff 0%, #e0effe 100%)' }}
     >
       <section className="w-full max-w-sm">
         <div
-          className="rounded border p-6"
+          className="rounded-3xl border border-white/70 p-8 shadow-2xl"
           style={{
             background: 'var(--t-panel)',
-            borderColor: 'var(--t-border)',
+            borderColor: '#f1f5f9',
+            borderRadius: '24px',
           }}
         >
-          <p className="text-xs" style={{ color: 'var(--t-muted)' }}>wastewise-auth v1.0</p>
-          <p className="mt-1 text-xl font-bold" style={{ color: 'var(--t-accent)' }}>
-            {'> '}AUTHENTICATE
-            <span className="cursor-blink" style={{ color: 'var(--t-accent)' }}>_</span>
+          <p className="text-xs font-medium" style={{ color: 'var(--t-muted)' }}>WasteWise operator portal</p>
+          <p className="mt-1 text-2xl font-bold" style={{ color: 'var(--t-text)' }}>
+            Sign in
           </p>
           <p className="mt-1 text-xs" style={{ color: 'var(--t-muted)' }}>
             sign in with your operator account
@@ -58,18 +58,17 @@ export function LoginPage() {
           <form className="mt-6 space-y-4" onSubmit={submit}>
             <div>
               <label
-                className="block text-[10px] uppercase tracking-widest"
+                className="block text-xs font-semibold"
                 style={{ color: 'var(--t-muted)' }}
               >
-                USER_CODE:
+                User code
               </label>
               <div
-                className="mt-1 flex items-center rounded border px-3"
-                style={{ background: 'var(--t-bg)', borderColor: 'var(--t-border-bright)' }}
+                className="mt-1 flex items-center rounded-xl border px-3"
+                style={{ background: 'var(--panel2)', borderColor: 'var(--t-border-bright)' }}
               >
-                <span className="mr-2 text-sm" style={{ color: 'var(--t-accent)' }}>{'>'}</span>
                 <input
-                  className="flex-1 bg-transparent py-2 text-sm focus:outline-none"
+                  className="w-full bg-transparent py-3 text-sm focus:outline-none"
                   style={{ color: 'var(--t-text)' }}
                   value={userCode}
                   onChange={(e) => setUserCode(e.target.value)}
@@ -83,18 +82,17 @@ export function LoginPage() {
 
             <div>
               <label
-                className="block text-[10px] uppercase tracking-widest"
+                className="block text-xs font-semibold"
                 style={{ color: 'var(--t-muted)' }}
               >
-                PASSWORD:
+                Password
               </label>
               <div
-                className="mt-1 flex items-center rounded border px-3"
-                style={{ background: 'var(--t-bg)', borderColor: 'var(--t-border-bright)' }}
+                className="mt-1 flex items-center rounded-xl border px-3"
+                style={{ background: 'var(--panel2)', borderColor: 'var(--t-border-bright)' }}
               >
-                <span className="mr-2 text-sm" style={{ color: 'var(--t-accent)' }}>{'>'}</span>
                 <input
-                  className="flex-1 bg-transparent py-2 text-sm focus:outline-none"
+                  className="w-full bg-transparent py-3 text-sm focus:outline-none"
                   style={{ color: 'var(--t-text)' }}
                   type="password"
                   value={password}
@@ -108,10 +106,10 @@ export function LoginPage() {
 
             {errorMessage && (
               <div
-                className="rounded border px-3 py-2 text-xs"
+                className="rounded-xl border px-3 py-2 text-xs"
                 style={{
                   borderColor: 'var(--t-danger)',
-                  background: 'rgba(255,68,68,0.08)',
+                  background: 'var(--danger-glow)',
                   color: 'var(--t-danger)',
                 }}
               >
@@ -120,16 +118,14 @@ export function LoginPage() {
             )}
 
             <button
-              className="w-full rounded border py-2.5 text-xs font-bold uppercase tracking-widest transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+              className="w-full rounded-full border border-transparent py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
               style={{
-                borderColor: 'var(--t-accent)',
-                background: mutation.isPending ? 'rgba(0,255,65,0.15)' : 'rgba(0,255,65,0.08)',
-                color: 'var(--t-accent)',
+                background: 'var(--purple)',
               }}
               disabled={mutation.isPending}
               type="submit"
             >
-              {mutation.isPending ? '> AUTHENTICATING...' : '[AUTHENTICATE]'}
+              {mutation.isPending ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
         </div>

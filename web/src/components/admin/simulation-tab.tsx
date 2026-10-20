@@ -11,8 +11,8 @@ type LogEntry = { type: 'req' | 'res' | 'err'; text: string };
 
 export function SimulationTab({ onSimulateDay, onResetBins, isPendingSimulate, isPendingReset }: Props) {
   const [log, setLog] = useState<LogEntry[]>([
-    { type: 'res', text: '// WasteWise simulation console ready' },
-    { type: 'res', text: '// Use commands below to run demo scenarios' },
+    { type: 'res', text: 'WasteWise simulation console ready' },
+    { type: 'res', text: 'Use the actions below to run demo scenarios' },
   ]);
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -45,79 +45,79 @@ export function SimulationTab({ onSimulateDay, onResetBins, isPendingSimulate, i
   const isAnyPending = isPendingSimulate || isPendingReset;
 
   return (
-    <div className="flex h-[calc(100vh-56px)] flex-col gap-4 overflow-auto p-5 font-mono">
-      <div className="rounded-lg border border-terminalWarn bg-terminalWarn/5 px-4 py-2.5 text-xs text-terminalWarn">
-        ⚠ DEMO_MODE — these operations modify database state for jury presentation
+    <div className="flex h-[calc(100vh-56px)] flex-col gap-4 overflow-auto p-5">
+      <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        ⚠ Demo mode — these operations modify database state for presentation
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Simulate card */}
-        <div className="rounded-lg border border-terminalBorder bg-terminalPanel p-5">
-          <p className="text-sm font-bold text-terminalAccent">[SIM] SIMULATE_TIME_+1_DAY</p>
-          <p className="mt-2 text-xs text-terminalMuted">
+        <div className="rounded-2xl border border-terminalBorder bg-terminalPanel p-5 shadow-sm">
+          <p className="text-base font-bold text-terminalText">Simulate one day</p>
+          <p className="mt-2 text-sm leading-6 text-terminalMuted">
             Increments all bin fill levels by 5–25% randomly. Flags bins ≥75% as needing collection.
             Useful for demonstrating reactive and predictive route generation.
           </p>
           <button
-            className="mt-4 w-full rounded border border-terminalAccent bg-terminalAccent/10 py-2.5 text-xs font-bold text-terminalAccent hover:bg-terminalAccent/20 disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-4 w-full rounded-full border border-terminalAccent bg-terminalAccent py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
             disabled={isAnyPending}
             onClick={handleSimulate}
             type="button"
           >
-            {isPendingSimulate ? '> EXECUTING...' : '[RUN_SIMULATION]'}
+            {isPendingSimulate ? 'Running...' : 'Run simulation'}
           </button>
         </div>
 
         {/* Reset card */}
-        <div className="rounded-lg border border-terminalDanger/40 bg-terminalPanel p-5">
-          <p className="text-sm font-bold text-terminalDanger">[RST] SAFE_RESET_BINS_TO_0%</p>
-          <p className="mt-2 text-xs text-terminalMuted">
+        <div className="rounded-2xl border border-terminalBorder bg-terminalPanel p-5 shadow-sm">
+          <p className="text-base font-bold text-terminalText">Reset bin fill levels</p>
+          <p className="mt-2 text-sm leading-6 text-terminalMuted">
             Sets all bin fill levels to 0% and clears needsCollection flags.
             Use to reset demo state before a new presentation run.
           </p>
 
           {confirmReset ? (
-            <div className="mt-4 flex items-center gap-3 rounded border border-terminalDanger bg-terminalDanger/10 p-3">
-              <span className="flex-1 text-xs text-terminalDanger">CONFIRM_DESTRUCTIVE_OPERATION?</span>
+            <div className="mt-4 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 p-3">
+              <span className="flex-1 text-sm font-medium text-red-800">Are you sure you want to reset the bins?</span>
               <button
-                className="rounded-lg border border-terminalDanger px-3 py-1 text-xs font-bold text-terminalDanger hover:bg-terminalDanger/20 disabled:opacity-40"
+                className="rounded-full border border-red-300 bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-40"
                 disabled={isAnyPending}
                 onClick={handleReset}
                 type="button"
               >
-                {isPendingReset ? 'RESETTING...' : '[CONFIRM]'}
+                {isPendingReset ? 'Resetting...' : 'Confirm reset'}
               </button>
               <button
-                className="rounded-lg border border-terminalBorder px-3 py-1 text-xs text-terminalMuted hover:text-terminalText"
+                className="rounded-full border border-terminalBorder bg-white px-3 py-1.5 text-xs text-terminalMuted hover:text-terminalText"
                 onClick={() => setConfirmReset(false)}
                 type="button"
               >
-                [CANCEL]
+                Cancel
               </button>
             </div>
           ) : (
             <button
-              className="mt-4 w-full rounded border border-terminalDanger/50 bg-terminalDanger/5 py-2.5 text-xs font-bold text-terminalDanger hover:bg-terminalDanger/15 disabled:cursor-not-allowed disabled:opacity-40"
+              className="mt-4 w-full rounded-full border border-red-200 bg-red-50 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40"
               disabled={isAnyPending}
               onClick={() => setConfirmReset(true)}
               type="button"
             >
-              [RESET_ALL_BINS]
+              Reset all bins
             </button>
           )}
         </div>
       </div>
 
       {/* Terminal output */}
-      <div className="flex-1 rounded border border-terminalBorder bg-terminal">
-        <div className="flex items-center justify-between border-b border-terminalBorder px-4 py-2 text-[10px] uppercase tracking-widest text-terminalMuted">
-          <span>{'┌─'} CONSOLE_OUTPUT {'─┐'}</span>
+      <div className="flex-1 rounded-2xl border border-terminalBorder bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-terminalBorder px-4 py-3 text-sm font-semibold text-terminalText">
+          <span>Activity log</span>
           <button
             className="text-terminalMuted hover:text-terminalAccent"
             onClick={clearLog}
             type="button"
           >
-            [CLEAR]
+            Clear
           </button>
         </div>
         <div className="t-scroll max-h-64 overflow-auto p-4 text-xs">

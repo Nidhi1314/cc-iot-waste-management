@@ -5,38 +5,38 @@ type Props = { operatorAccounts: VehiclePublic[] };
 
 export function OperatorsTab({ operatorAccounts }: Props) {
   return (
-    <div className="flex h-[calc(100vh-56px)] flex-col font-mono">
-      <div className="border-b border-terminalBorder bg-terminalPanel2 px-5 py-3 text-[10px] uppercase tracking-widest text-terminalMuted">
-        {'┌─'} OPERATOR_ACCOUNTS {'─┐'} — {operatorAccounts.length} records
+    <div className="flex h-[calc(100vh-56px)] flex-col">
+      <div className="border-b border-terminalBorder bg-terminalPanel px-5 py-4 text-sm font-semibold text-terminalText">
+        Operator accounts <span className="ml-2 text-xs font-normal text-terminalMuted">{operatorAccounts.length} records</span>
       </div>
 
       <div className="t-scroll flex-1 overflow-auto">
-        <table className="min-w-full text-left text-xs">
+        <table className="min-w-[680px] w-full text-left text-sm">
           <thead className="sticky top-0 bg-terminalPanel2">
             <tr className="border-b border-terminalBorder">
-              <th className="px-4 py-2.5 text-[10px] uppercase tracking-wider text-terminalMuted">USER_CODE</th>
-              <th className="px-4 py-2.5 text-[10px] uppercase tracking-wider text-terminalMuted">ROLE</th>
-              <th className="px-4 py-2.5 text-[10px] uppercase tracking-wider text-terminalMuted">MAX_CAPACITY</th>
-              <th className="px-4 py-2.5 text-[10px] uppercase tracking-wider text-terminalMuted">CREATED_AT</th>
-              <th className="px-4 py-2.5 text-[10px] uppercase tracking-wider text-terminalMuted">ID</th>
+              <th className="px-4 py-3 text-xs font-semibold text-terminalMuted">User code</th>
+              <th className="px-4 py-3 text-xs font-semibold text-terminalMuted">Role</th>
+              <th className="px-4 py-3 text-xs font-semibold text-terminalMuted">Max capacity</th>
+              <th className="px-4 py-3 text-xs font-semibold text-terminalMuted">Created at</th>
+              <th className="px-4 py-3 text-xs font-semibold text-terminalMuted">ID</th>
             </tr>
           </thead>
           <tbody>
             {operatorAccounts.map((op) => (
-              <tr key={op.id} className="border-b border-terminalBorder/50 hover:bg-terminalPanel2/60">
-                <td className="px-4 py-2.5 font-bold text-terminalText">{op.userCode}</td>
-                <td className="px-4 py-2.5">
-                  <span className={`rounded border px-2 py-0.5 text-[10px] font-bold ${
+              <tr key={op.id} className="border-b border-terminalBorder/50 hover:bg-blue-50/70">
+                <td className="px-4 py-3 font-semibold text-terminalText">{op.userCode}</td>
+                <td className="px-4 py-3">
+                  <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                     op.role === 'ADMIN'
-                      ? 'border-terminalAccent2 text-terminalAccent2'
-                      : 'border-terminalAccent text-terminalAccent'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-slate-100 text-slate-700'
                   }`}>
-                    [{op.role}]
+                    {op.role}
                   </span>
                 </td>
-                <td className="px-4 py-2.5 text-terminalText">{op.maxCapacityKg} kg</td>
-                <td className="px-4 py-2.5 text-terminalMuted">{formatDateTime(op.createdAt)}</td>
-                <td className="px-4 py-2.5 text-[11px] text-terminalMuted">{op.id.slice(0, 16)}…</td>
+                <td className="px-4 py-3 text-terminalText">{op.maxCapacityKg} kg</td>
+                <td className="px-4 py-3 font-mono text-xs text-terminalMuted">{formatDateTime(op.createdAt)}</td>
+                <td className="px-4 py-3 font-mono text-xs text-terminalMuted">{op.id.slice(0, 16)}…</td>
               </tr>
             ))}
           </tbody>
@@ -44,7 +44,7 @@ export function OperatorsTab({ operatorAccounts }: Props) {
 
         {operatorAccounts.length === 0 && (
           <div className="p-8 text-center text-terminalMuted">
-            {'// no operator accounts found'}
+            No operator accounts found.
           </div>
         )}
       </div>

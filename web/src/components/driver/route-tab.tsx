@@ -40,47 +40,47 @@ export function RouteTab({ route, bins, progress, nextStop, completedCount, allD
   }, [isConfirmOpen]);
 
   return (
-    <div className="t-scroll flex h-full flex-col overflow-auto bg-terminal p-5 font-mono">
+    <div className="t-scroll flex h-full flex-col overflow-auto bg-terminal p-5">
       {/* Next stop panel */}
-      <div className="rounded-lg border border-terminalBorder bg-terminalPanel">
-        <div className="t-panel-header">{'┌─'} NEXT_STOP {'─┐'}</div>
+      <div className="rounded-2xl border border-terminalBorder bg-terminalPanel shadow-sm">
+        <div className="t-panel-header">Next stop</div>
         <div className="p-5">
           {nextStop && nextBin ? (
             <>
               <p className="text-base font-bold text-terminalText">{nextBin.address}</p>
               <div className="mt-2 space-y-1 text-xs text-terminalMuted">
                 <p>
-                  <span className="text-terminalAccent">FILL_LVL: </span>
+                  <span className="text-terminalAccent">Fill level: </span>
                   <AsciiBar pct={nextBin.currentFillLevel} />
                 </p>
                 <p>
-                  <span className="text-terminalAccent">COLLECT: </span>
+                  <span className="text-terminalAccent">Collect: </span>
                   <span className="text-terminalText">{nextStop.collectedKg} kg</span>
                 </p>
                 <p>
-                  <span className="text-terminalAccent">STATUS: </span>
+                  <span className="text-terminalAccent">Status: </span>
                   <span className="text-terminalText">[{nextBin.status}]</span>
                 </p>
               </div>
               <button
-                className="mt-4 w-full rounded border border-terminalAccent bg-terminalAccent/10 py-2.5 text-xs font-bold text-terminalAccent hover:bg-terminalAccent/20 active:opacity-80"
+                className="mt-4 w-full rounded-full border border-terminalAccent bg-terminalAccent py-2.5 text-sm font-semibold text-white hover:bg-blue-700 active:opacity-80"
                 onClick={() => onMarkDone(nextStop.step, nextStop.binId)}
                 type="button"
               >
-                [MARK_DONE]
+                Mark stop complete
               </button>
             </>
           ) : allDone ? (
-            <p className="text-xs text-terminalAccent">{'// all stops completed'}</p>
+            <p className="text-sm font-medium text-emerald-700">All stops completed.</p>
           ) : (
-            <p className="text-xs text-terminalMuted">{'// no stop available'}</p>
+            <p className="text-sm text-terminalMuted">No stop is currently available.</p>
           )}
         </div>
       </div>
 
       {/* Progress */}
-      <div className="mt-4 flex items-center gap-3 rounded-lg border border-terminalBorder bg-terminalPanel px-4 py-3 text-xs">
-        <span className="text-terminalMuted">PROGRESS:</span>
+      <div className="mt-4 flex items-center gap-3 rounded-2xl border border-terminalBorder bg-terminalPanel px-4 py-3 text-sm shadow-sm">
+        <span className="font-medium text-terminalMuted">Progress</span>
         <div className="h-1 flex-1 overflow-hidden rounded-full bg-terminalPanel2">
           <div
             className="h-full rounded-full bg-terminalAccent transition-all duration-500"
@@ -91,9 +91,9 @@ export function RouteTab({ route, bins, progress, nextStop, completedCount, allD
       </div>
 
       {/* Stop list */}
-      <div className="mt-4 rounded-lg border border-terminalBorder bg-terminalPanel">
+      <div className="mt-4 rounded-2xl border border-terminalBorder bg-terminalPanel shadow-sm">
         <div className="t-panel-header flex items-center justify-between">
-          <span>{'┌─'} WAYPOINTS {'─┐'}</span>
+          <span>Stops</span>
           <span className="text-terminalMuted">{remainingCount} remaining</span>
         </div>
         <div className="t-scroll max-h-64 overflow-auto">
@@ -114,17 +114,17 @@ export function RouteTab({ route, bins, progress, nextStop, completedCount, allD
                   {isDone ? '✓' : String(stop.step).padStart(2, '0')}
                 </span>
                 <span className={`flex-1 truncate px-3 ${isDone ? 'text-terminalMuted line-through' : 'text-terminalText'}`}>
-                  {bin?.address ?? `BIN_${stop.binId.slice(0, 8).toUpperCase()}`}
+                  {bin?.address ?? `Bin ${stop.binId.slice(0, 8).toUpperCase()}`}
                 </span>
                 <span className="shrink-0 text-terminalMuted">{stop.collectedKg}kg</span>
-                <span className={`ml-3 shrink-0 rounded border px-1.5 py-0.5 text-[10px] ${
+                <span className={`ml-3 shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold ${
                   isDone
-                    ? 'border-terminalAccent text-terminalAccent'
+                    ? 'bg-emerald-100 text-emerald-800'
                     : isNext
-                    ? 'border-terminalWarn text-terminalWarn'
-                    : 'border-terminalBorder text-terminalMuted'
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-slate-100 text-slate-600'
                 }`}>
-                  {isDone ? '[DONE]' : isNext ? '[NEXT]' : '[PEND]'}
+                  {isDone ? 'Done' : isNext ? 'Next' : 'Pending'}
                 </span>
               </div>
             );
@@ -135,17 +135,17 @@ export function RouteTab({ route, bins, progress, nextStop, completedCount, allD
       {/* Complete route */}
       <div className="mt-4">
         {!allDone && (
-          <p className="mb-2 text-center text-[10px] text-terminalMuted">
-            {'// '}{remainingCount} stop{remainingCount !== 1 ? 's' : ''} remaining before route can be completed
+          <p className="mb-2 text-center text-xs text-terminalMuted">
+            {remainingCount} stop{remainingCount !== 1 ? 's' : ''} remaining before the route can be completed
           </p>
         )}
         <button
-          className="w-full rounded border border-terminalAccent/50 bg-terminalAccent/5 py-2.5 text-xs font-bold text-terminalAccent hover:bg-terminalAccent/15 disabled:cursor-not-allowed disabled:opacity-40"
+          className="w-full rounded-full border border-terminalAccent bg-terminalAccent py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
           disabled={!allDone || completePending || route.isCompleted}
           onClick={() => setIsConfirmOpen(true)}
           type="button"
         >
-          {completePending ? '> COMPLETING...' : route.isCompleted ? '[ROUTE_COMPLETED]' : '[COMPLETE_ROUTE]'}
+          {completePending ? 'Completing...' : route.isCompleted ? 'Route completed' : 'Complete route'}
         </button>
       </div>
 
@@ -156,26 +156,26 @@ export function RouteTab({ route, bins, progress, nextStop, completedCount, allD
           onClick={() => setIsConfirmOpen(false)}
         >
           <div
-            className="confirm-card w-full max-w-sm rounded-lg border border-terminalBorder bg-terminalPanel p-6 shadow-2xl"
+            className="confirm-card w-full max-w-sm rounded-3xl border border-terminalBorder bg-terminalPanel p-6 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-sm font-bold text-terminalAccent">CONFIRM_ROUTE_COMPLETION</p>
-            <p className="mt-2 text-xs text-terminalMuted">This will mark the route as completed in the system.</p>
+            <p className="text-base font-bold text-terminalText">Complete this route?</p>
+            <p className="mt-2 text-sm text-terminalMuted">This will mark the route as completed in the system.</p>
             <div className="mt-5 flex gap-3">
               <button
-                className="flex-1 rounded border border-terminalBorder py-2 text-xs text-terminalMuted hover:text-terminalText"
+                className="flex-1 rounded-full border border-terminalBorder py-2 text-sm text-terminalMuted hover:text-terminalText"
                 onClick={() => setIsConfirmOpen(false)}
                 type="button"
               >
-                [CANCEL]
+                Cancel
               </button>
               <button
-                className="flex-1 rounded border border-terminalAccent bg-terminalAccent/10 py-2 text-xs font-bold text-terminalAccent hover:bg-terminalAccent/20 disabled:opacity-50"
+                className="flex-1 rounded-full border border-terminalAccent bg-terminalAccent py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                 disabled={completePending}
                 onClick={() => { onCompleteRoute(route.id); setIsConfirmOpen(false); }}
                 type="button"
               >
-                {completePending ? '> COMPLETING...' : '[CONFIRM]'}
+                {completePending ? 'Completing...' : 'Confirm'}
               </button>
             </div>
           </div>

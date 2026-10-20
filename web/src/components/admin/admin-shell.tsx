@@ -41,12 +41,12 @@ type AdminShellProps = {
 };
 
 const NAV_ITEMS: { id: AdminTab; icon: string; label: string }[] = [
-  { id: 'overview',    icon: '>_',  label: 'OVERVIEW' },
-  { id: 'map',         icon: '◈',   label: 'SURVEILLANCE' },
-  { id: 'bins',        icon: '⬡',   label: 'BINS' },
-  { id: 'routes',      icon: '⟳',   label: 'ROUTES' },
-  { id: 'operators',   icon: '⚙',   label: 'OPERATORS' },
-  { id: 'simulation',  icon: '◎',   label: 'SIMULATION' },
+  { id: 'overview',    icon: '⌂',   label: 'Overview' },
+  { id: 'map',         icon: '◈',   label: 'Surveillance' },
+  { id: 'bins',        icon: '⬡',   label: 'Bins' },
+  { id: 'routes',      icon: '⟳',   label: 'Routes' },
+  { id: 'operators',   icon: '⚙',   label: 'Operators' },
+  { id: 'simulation',  icon: '◎',   label: 'Simulation' },
 ];
 
 export function AdminShell(props: AdminShellProps) {
@@ -55,7 +55,7 @@ export function AdminShell(props: AdminShellProps) {
 
   return (
     <div
-      className="flex h-screen overflow-hidden bg-terminal font-mono"
+      className="flex h-screen overflow-hidden bg-terminal"
       style={{ background: 'var(--t-bg)', color: 'var(--t-text)' }}
     >
       {/* Sidebar */}
@@ -64,10 +64,10 @@ export function AdminShell(props: AdminShellProps) {
         style={{ width: sidebarExpanded ? '200px' : '52px' }}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between border-b border-terminalBorder px-3 py-3.5">
+        <div className="flex items-center justify-between border-b border-terminalBorder px-3 py-4">
           {sidebarExpanded && (
-            <span className="text-sm font-bold tracking-widest text-terminalAccent">
-              [WW]
+          <span className="text-sm font-extrabold tracking-tight text-terminalAccent">
+            WW <span className="text-terminalText">WasteWise</span>
             </span>
           )}
           <button
@@ -87,10 +87,10 @@ export function AdminShell(props: AdminShellProps) {
             return (
               <button
                 key={item.id}
-                className={`flex w-full items-center gap-3 px-3 py-2.5 text-left text-xs transition-colors ${
+                className={`mx-2 flex w-[calc(100%-1rem)] items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition-colors ${
                   isActive
-                    ? 'border-l-2 border-terminalAccent bg-terminalAccent/10 text-terminalAccent'
-                    : 'border-l-2 border-transparent text-terminalMuted hover:bg-terminalPanel2 hover:text-terminalText'
+                    ? 'bg-terminalAccent text-white shadow-sm'
+                    : 'text-terminalMuted hover:bg-terminalPanel2 hover:text-terminalText'
                 }`}
                 onClick={() => setActiveTab(item.id)}
                 type="button"
@@ -98,7 +98,7 @@ export function AdminShell(props: AdminShellProps) {
               >
                 <span className="w-4 shrink-0 text-center text-sm">{item.icon}</span>
                 {sidebarExpanded && (
-                  <span className="truncate text-[11px] font-semibold tracking-wider">
+                  <span className="truncate text-xs font-semibold">
                     {item.label}
                   </span>
                 )}
@@ -110,18 +110,18 @@ export function AdminShell(props: AdminShellProps) {
         {/* Footer */}
         <div className="border-t border-terminalBorder p-3">
           {sidebarExpanded && (
-            <p className="mb-2 truncate text-[10px] text-terminalMuted">
+            <p className="mb-2 truncate text-xs text-terminalMuted">
               {props.user.userCode} [{props.user.role}]
             </p>
           )}
           <button
-            className="flex w-full items-center gap-2 rounded border border-terminalBorder px-2 py-1.5 text-[10px] text-terminalMuted hover:border-terminalDanger hover:text-terminalDanger"
+            className="flex w-full items-center gap-2 rounded-xl border border-terminalBorder px-3 py-2 text-xs font-medium text-terminalMuted hover:border-terminalDanger hover:bg-red-50 hover:text-terminalDanger"
             onClick={props.onLogout}
             type="button"
             title="Logout"
           >
             <span>⏻</span>
-            {sidebarExpanded && <span>LOGOUT</span>}
+            {sidebarExpanded && <span>Logout</span>}
           </button>
         </div>
       </aside>
@@ -129,16 +129,20 @@ export function AdminShell(props: AdminShellProps) {
       {/* Main content */}
       <main className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex items-center justify-between border-b border-terminalBorder bg-terminalPanel px-5 py-2.5 text-[11px] text-terminalMuted">
+        <div className="flex items-center justify-between border-b border-terminalBorder bg-terminalPanel px-5 py-3 text-xs text-terminalMuted">
           <span>
-            wastewise<span className="text-terminalAccent">/</span>
-            {activeTab}
-            <span className="cursor-blink text-terminalAccent"> _</span>
+            <span className="font-semibold text-terminalText">WasteWise</span>
+            <span className="px-2 text-slate-300">/</span>
+            <span className="capitalize">{activeTab}</span>
           </span>
-          <span className="text-[10px]">
-            bins:<span className="text-terminalText">{props.bins.length}</span>
-            {' | '}critical:<span className={props.criticalBins.length > 0 ? 'text-terminalWarn' : 'text-terminalText'}>{props.criticalBins.length}</span>
-            {' | '}routes:<span className="text-terminalText">{props.activeRoutes.length}</span>
+          <span className="flex flex-wrap items-center gap-2 text-[11px]">
+            <span>Bins <strong className="text-terminalText">{props.bins.length}</strong></span>
+            <span className="text-slate-300">|</span>
+            <span className={props.criticalBins.length > 0 ? 'rounded-full bg-amber-100 px-2 py-1 font-semibold text-amber-800' : 'text-terminalMuted'}>
+              Critical <strong>{props.criticalBins.length}</strong>
+            </span>
+            <span className="text-slate-300">|</span>
+            <span>Routes <strong className="text-terminalText">{props.activeRoutes.length}</strong></span>
           </span>
         </div>
 

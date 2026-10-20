@@ -16,8 +16,8 @@ function StatBlock({ label, value, sub, accent }: {
   accent?: boolean;
 }) {
   return (
-    <div className="rounded-lg border border-terminalBorder bg-terminalPanel p-4 font-mono">
-      <p className="text-[10px] uppercase tracking-widest text-terminalMuted">{label}</p>
+    <div className="rounded-2xl border border-terminalBorder bg-terminalPanel p-5 shadow-sm">
+      <p className="text-xs font-semibold text-terminalMuted">{label}</p>
       <p className={`mt-2 text-3xl font-bold ${accent ? 'text-terminalWarn' : 'text-terminalAccent'}`}>
         {value}
       </p>
@@ -30,63 +30,61 @@ export function OverviewTab({ bins, criticalBins, routes, activeRoutes, operator
   const damagedBins = bins.filter((b) => b.status === 'DAMAGED' || b.status === 'OUT_OF_SERVICE');
 
   return (
-    <div className="space-y-6 p-6 font-mono">
-      <div className="text-xs text-terminalMuted">
-        <span className="text-terminalAccent">{'> '}</span>
-        SYSTEM STATUS:{' '}
-        <span className={criticalBins.length > 0 ? 'text-terminalWarn' : 'text-terminalAccent'}>
-          {criticalBins.length > 0 ? 'ATTENTION_REQUIRED' : 'NOMINAL'}
+    <div className="space-y-6 p-6">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-terminalMuted">
+        <span className="font-semibold text-terminalText">System status</span>
+        <span className={criticalBins.length > 0 ? 'rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800' : 'rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800'}>
+          {criticalBins.length > 0 ? 'Attention required' : 'Nominal'}
         </span>
-        {' '}|{' '}
-        BINS: <span className="text-terminalText">{bins.length}</span>
-        {' '}|{' '}
-        CRITICAL: <span className={criticalBins.length > 0 ? 'text-terminalWarn' : 'text-terminalText'}>{criticalBins.length}</span>
-        {' '}|{' '}
-        ROUTES: <span className="text-terminalText">{activeRoutes.length}</span>
-        <span className="cursor-blink text-terminalAccent"> _</span>
+        <span className="h-4 border-l border-slate-200" />
+        <span>Bins <strong className="text-terminalText">{bins.length}</strong></span>
+        <span className="h-4 border-l border-slate-200" />
+        <span>Critical <strong className={criticalBins.length > 0 ? 'text-terminalWarn' : 'text-terminalText'}>{criticalBins.length}</strong></span>
+        <span className="h-4 border-l border-slate-200" />
+        <span>Routes <strong className="text-terminalText">{activeRoutes.length}</strong></span>
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatBlock label="TOTAL_BINS" value={bins.length} sub="units registered" />
-        <StatBlock label="CRITICAL_BINS" value={criticalBins.length} sub="fill ≥ 75%" accent={criticalBins.length > 0} />
-        <StatBlock label="ACTIVE_ROUTES" value={activeRoutes.length} sub="in progress" />
-        <StatBlock label="OPERATORS" value={operatorAccounts.length} sub="accounts" />
+        <StatBlock label="Total bins" value={bins.length} sub="Units registered" />
+        <StatBlock label="Critical bins" value={criticalBins.length} sub="Fill ≥ 75%" accent={criticalBins.length > 0} />
+        <StatBlock label="Active routes" value={activeRoutes.length} sub="In progress" />
+        <StatBlock label="Operators" value={operatorAccounts.length} sub="Accounts" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border border-terminalBorder bg-terminalPanel">
+        <div className="rounded-2xl border border-terminalBorder bg-terminalPanel shadow-sm">
           <div className="t-panel-header flex items-center justify-between">
-            <span>{'┌─'} CRITICAL_BINS {'─┐'}</span>
-            <span className="text-terminalWarn">{criticalBins.length} flagged</span>
+            <span>Critical bins</span>
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">{criticalBins.length} flagged</span>
           </div>
           <div className="t-scroll max-h-48 overflow-auto p-3 text-xs">
             {criticalBins.length === 0 ? (
-              <p className="text-terminalMuted">{'// no critical bins'}</p>
+              <p className="text-terminalMuted">No critical bins</p>
             ) : (
               criticalBins.slice(0, 8).map((bin) => (
-                <div key={bin.id} className="flex items-center justify-between border-b border-terminalBorder py-1.5 last:border-0">
+                <div key={bin.id} className="flex items-center justify-between border-b border-terminalBorder py-2.5 last:border-0">
                   <span className="truncate text-terminalText">{bin.address}</span>
-                  <span className="ml-3 shrink-0 text-terminalWarn">{bin.currentFillLevel}%</span>
+                  <span className="ml-3 shrink-0 rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-800">{bin.currentFillLevel}%</span>
                 </div>
               ))
             )}
           </div>
         </div>
 
-        <div className="rounded-lg border border-terminalBorder bg-terminalPanel">
+        <div className="rounded-2xl border border-terminalBorder bg-terminalPanel shadow-sm">
           <div className="t-panel-header flex items-center justify-between">
-            <span>{'┌─'} RECENT_ROUTES {'─┐'}</span>
+            <span>Recent routes</span>
             <span className="text-terminalMuted">{routes.length} total</span>
           </div>
           <div className="t-scroll max-h-48 overflow-auto p-3 text-xs">
             {routes.length === 0 ? (
-              <p className="text-terminalMuted">{'// no routes generated'}</p>
+              <p className="text-terminalMuted">No routes generated</p>
             ) : (
               routes.slice(0, 8).map((route) => (
-                <div key={route.id} className="flex items-center justify-between border-b border-terminalBorder py-1.5 last:border-0">
+                <div key={route.id} className="flex items-center justify-between border-b border-terminalBorder py-2.5 last:border-0">
                   <span className="font-mono text-terminalText">RTE_{route.id.slice(0, 8).toUpperCase()}</span>
-                  <span className={route.isCompleted ? 'text-terminalAccent' : 'text-terminalWarn'}>
-                    [{route.isCompleted ? 'DONE' : 'ACTIVE'}]
+                  <span className={route.isCompleted ? 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700' : 'rounded-full bg-terminalAccent px-2.5 py-1 text-xs font-semibold text-white'}>
+                    {route.isCompleted ? 'Done' : 'Active'}
                   </span>
                 </div>
               ))
@@ -96,8 +94,8 @@ export function OverviewTab({ bins, criticalBins, routes, activeRoutes, operator
       </div>
 
       {damagedBins.length > 0 && (
-        <div className="rounded-lg border border-terminalDanger bg-terminalDanger/5 p-3 font-mono text-xs">
-          <p className="text-terminalDanger">[WARN] {damagedBins.length} bin(s) with DAMAGED or OUT_OF_SERVICE status:</p>
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm">
+          <p className="font-semibold text-amber-900">⚠ {damagedBins.length} bin(s) need attention due to damaged or out-of-service status:</p>
           <ul className="mt-2 space-y-1 text-terminalMuted">
             {damagedBins.map((b) => (
               <li key={b.id}>{'  > '}<span className="text-terminalText">{b.address}</span> [{b.status}]</li>
@@ -106,11 +104,11 @@ export function OverviewTab({ bins, criticalBins, routes, activeRoutes, operator
         </div>
       )}
 
-      <div className="rounded-lg border border-terminalBorder bg-terminalPanel">
-        <div className="t-panel-header">{'┌─'} OPERATOR_ACCOUNTS {'─┐'}</div>
+      <div className="rounded-2xl border border-terminalBorder bg-terminalPanel shadow-sm">
+        <div className="t-panel-header">Operator accounts</div>
         <div className="t-scroll max-h-40 overflow-auto p-3 text-xs">
           {operatorAccounts.length === 0 ? (
-            <p className="text-terminalMuted">{'// no operators'}</p>
+            <p className="text-terminalMuted">No operators</p>
           ) : (
             operatorAccounts.map((op) => (
               <div key={op.id} className="flex items-center justify-between border-b border-terminalBorder py-1.5 last:border-0">

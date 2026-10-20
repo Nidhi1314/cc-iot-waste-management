@@ -4,12 +4,13 @@ import { WasteMap } from '../map/waste-map';
 import { formatDateTime } from '../../lib/utils';
 
 function AsciiBar({ pct }: { pct: number }) {
-  const filled = Math.round(pct / 10);
-  const empty = 10 - filled;
-  const color = pct >= 75 ? 'text-terminalWarn' : 'text-terminalAccent';
+  const color = pct >= 75 ? 'bg-amber-500' : 'bg-terminalAccent';
   return (
-    <span className={`text-xs ${color}`}>
-      [{'█'.repeat(filled)}{'░'.repeat(empty)}] {pct}%
+    <span className="inline-flex min-w-28 items-center gap-2">
+      <span className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+        <span className={`block h-full rounded-full ${color}`} style={{ width: `${Math.min(100, pct)}%` }} />
+      </span>
+      <span className="text-xs font-semibold text-terminalText">{pct}%</span>
     </span>
   );
 }
@@ -32,29 +33,29 @@ export function DriverMapTab({ bins, route, nextStopBinId, nextStop, completedBi
   const [confirmComplete, setConfirmComplete] = useState(false);
 
   return (
-    <div className="relative h-full font-mono">
+    <div className="relative h-full">
       <WasteMap
         bins={bins}
         route={route ?? undefined}
         nextStopBinId={nextStopBinId}
         completedBinIds={completedBinIds}
         justCompletedBinId={justCompletedBinId}
-        theme="dark"
+        theme="light"
         className="h-full w-full"
       />
 
       {/* Legend — top left */}
-      <div className="absolute left-3 top-3 z-[999] rounded border border-terminalBorder bg-terminal p-2 text-[10px] font-mono">
-        <div className="flex items-center gap-1.5 text-terminalAccent"><span className="inline-block h-2 w-2 rounded-full bg-green-500" /> NORMAL</div>
-        <div className="flex items-center gap-1.5 text-terminalWarn"><span className="inline-block h-2 w-2 rounded-full bg-yellow-400" /> CRITICAL</div>
-        <div className="flex items-center gap-1.5 text-terminalDanger"><span className="inline-block h-2 w-2 rounded-full bg-red-500" /> DAMAGED</div>
+      <div className="absolute left-3 top-3 z-[999] rounded-2xl border border-terminalBorder bg-white p-3 text-xs shadow-lg">
+        <div className="flex items-center gap-1.5 text-terminalAccent"><span className="inline-block h-2 w-2 rounded-full bg-green-500" /> Normal</div>
+        <div className="flex items-center gap-1.5 text-terminalWarn"><span className="inline-block h-2 w-2 rounded-full bg-yellow-500" /> Critical</div>
+        <div className="flex items-center gap-1.5 text-terminalDanger"><span className="inline-block h-2 w-2 rounded-full bg-red-500" /> Damaged</div>
       </div>
 
       {/* Top-right action card — terminal style */}
       {allDone ? (
         route && !route.isCompleted ? (
-          <div className="absolute right-3 top-3 z-[999] w-48 rounded border border-terminalAccent/40 bg-terminal p-2.5 font-mono">
-            <p className="text-[10px] font-bold text-terminalAccent">{'// all stops done'}</p>
+          <div className="absolute right-3 top-3 z-[999] w-52 rounded-2xl border border-terminalBorder bg-white p-3 shadow-lg">
+            <p className="text-xs font-semibold text-terminalAccent">All stops are complete</p>
             {confirmComplete ? (
               <div className="mt-2 flex gap-1.5">
                 <button
@@ -62,78 +63,78 @@ export function DriverMapTab({ bins, route, nextStopBinId, nextStop, completedBi
                   onClick={() => setConfirmComplete(false)}
                   type="button"
                 >
-                  [N]
+                  No
                 </button>
                 <button
-                  className="flex-1 rounded border border-terminalAccent bg-terminalAccent/10 py-1 text-[10px] font-bold text-terminalAccent hover:bg-terminalAccent/20 disabled:opacity-50"
+                  className="flex-1 rounded-full border border-terminalAccent bg-terminalAccent py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                   disabled={completePending}
                   onClick={() => { onCompleteRoute(route.id); setConfirmComplete(false); }}
                   type="button"
                 >
-                  {completePending ? '...' : '[Y]'}
+                  {completePending ? '...' : 'Yes'}
                 </button>
               </div>
             ) : (
               <button
-                className="mt-2 w-full rounded border border-terminalAccent bg-terminalAccent/10 py-1.5 text-[10px] font-bold text-terminalAccent hover:bg-terminalAccent/20"
+                className="mt-2 w-full rounded-full border border-terminalAccent bg-terminalAccent py-2 text-xs font-semibold text-white hover:bg-blue-700"
                 onClick={() => setConfirmComplete(true)}
                 type="button"
               >
-                [COMPLETE_ROUTE]
+                Complete route
               </button>
             )}
           </div>
         ) : route?.isCompleted ? (
-          <div className="absolute right-3 top-3 z-[999] rounded border border-terminalAccent/40 bg-terminal px-3 py-2 font-mono text-[10px] font-bold text-terminalAccent">
-            [ROUTE_COMPLETED]
+          <div className="absolute right-3 top-3 z-[999] rounded-full bg-emerald-100 px-3 py-2 text-xs font-semibold text-emerald-800 shadow-sm">
+            Route completed
           </div>
         ) : null
       ) : nextBin && nextStop ? (
-        <div className="slide-up absolute right-3 top-3 z-[999] w-72 rounded border border-terminalBorder bg-terminal p-4 font-mono">
+        <div className="slide-up absolute right-3 top-3 z-[999] w-72 rounded-2xl border border-terminalBorder bg-white p-4 shadow-xl">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-[10px] uppercase tracking-widest text-terminalMuted">NEXT_STOP</p>
+            <p className="text-xs font-semibold text-terminalMuted">Next stop</p>
             <span className="text-[10px] text-terminalMuted">step_{String(nextStop.step).padStart(2, '0')}</span>
           </div>
           <div className="space-y-1.5 text-xs text-terminalMuted">
             <p>
-              <span className="text-terminalAccent">ADDRESS: </span>
+              <span className="text-terminalAccent">Address: </span>
               <span className="text-terminalText">{nextBin.address}</span>
             </p>
             <p>
-              <span className="text-terminalAccent">FILL_LVL: </span>
+              <span className="text-terminalAccent">Fill level: </span>
               <AsciiBar pct={nextBin.currentFillLevel} />
             </p>
             <p>
-              <span className="text-terminalAccent">STATUS: </span>
+              <span className="text-terminalAccent">Status: </span>
               <span className={nextBin.status === 'ACTIVE' ? 'text-terminalAccent' : 'text-terminalDanger'}>
-                [{nextBin.status}]
+                {nextBin.status.replaceAll('_', ' ')}
               </span>
             </p>
             <p>
-              <span className="text-terminalAccent">NEEDS_COLL: </span>
+              <span className="text-terminalAccent">Needs collection: </span>
               <span className={nextBin.needsCollection ? 'text-terminalWarn' : 'text-terminalAccent'}>
-                [{nextBin.needsCollection ? 'YES' : 'NO'}]
+                {nextBin.needsCollection ? 'Yes' : 'No'}
               </span>
             </p>
             <p>
-              <span className="text-terminalAccent">COLLECT: </span>
+              <span className="text-terminalAccent">Collect: </span>
               <span className="text-terminalText">{nextStop.collectedKg} kg</span>
             </p>
             <p>
-              <span className="text-terminalAccent">CAPACITY: </span>
+              <span className="text-terminalAccent">Capacity: </span>
               <span className="text-terminalText">{nextBin.maxCapacityKg}kg</span>
             </p>
             <p>
-              <span className="text-terminalAccent">UPDATED: </span>
-              <span className="text-terminalText">{formatDateTime(nextBin.lastUpdated)}</span>
+              <span className="text-terminalAccent">Updated: </span>
+              <span className="font-mono text-xs text-terminalText">{formatDateTime(nextBin.lastUpdated)}</span>
             </p>
           </div>
           <button
-            className="mt-4 w-full rounded border border-terminalAccent bg-terminalAccent/10 py-2 text-xs font-bold text-terminalAccent hover:bg-terminalAccent/20 active:opacity-80"
+            className="mt-4 w-full rounded-full border border-terminalAccent bg-terminalAccent py-2.5 text-sm font-semibold text-white hover:bg-blue-700 active:opacity-80"
             onClick={() => onMarkDone(nextStop.step, nextStop.binId)}
             type="button"
           >
-            [MARK_DONE]
+            Mark stop complete
           </button>
         </div>
       ) : null}
