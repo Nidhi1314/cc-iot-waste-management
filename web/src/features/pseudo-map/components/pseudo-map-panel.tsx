@@ -80,12 +80,12 @@ export function PseudoMapPanel({
           );
         })}
 
-        {/* Step etiketlerini (Ziyaret Sırası) dairelerin üzerine çiziyoruz */}
+        {/* Draw step labels (Visit Order) on top of the circles */}
         {routePoints.map((point) => (
           <text
             key={`step-${point.binId}`}
             x={point.x}
-            y={point.y - 12} // Dairenin biraz yukarısı
+            y={point.y - 12} // Slightly above the circle
             fontSize="10"
             fill="#0f172a"
             fontWeight="bold"

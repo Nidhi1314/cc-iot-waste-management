@@ -210,6 +210,12 @@ Seed sample data:
 npm run db:seed
 ```
 
+Translate existing Turkish demo bin addresses to English without clearing database data:
+
+```bash
+npm run db:translate-bin-addresses
+```
+
 ## Notes for newcomers
 
 - Start from `src/app.module.ts` to see module wiring.

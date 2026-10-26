@@ -21,7 +21,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx src/infrastructure/database/seed.ts"
+    "db:seed": "tsx src/infrastructure/database/seed.ts",
+    "db:translate-bin-addresses": "tsx src/infrastructure/database/translate-bin-addresses.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",

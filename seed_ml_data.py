@@ -38,7 +38,7 @@ def generate_sensor_data(bin_id, base_fill_rate, current_time):
 
 def main():
     if not DATABASE_URL:
-        print("Hata: DATABASE_URL .env dosyasında bulunamadı!")
+        print("Error: DATABASE_URL was not found in the .env file!")
         return
 
     conn = None

@@ -11,7 +11,7 @@ async function bootstrap() {
       'http://localhost:3000',
     ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: '*', // Tarayıcının gönderdiği tüm başlıklara izin ver
+    allowedHeaders: '*', // Allow all headers sent by the browser
     credentials: true,
   });
 

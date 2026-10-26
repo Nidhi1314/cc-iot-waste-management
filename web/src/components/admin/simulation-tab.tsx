@@ -1,13 +1,25 @@
 import { useState } from 'react';
 
 type Props = {
-  onSimulateDay: () => Promise<{ message?: string }>;
-  onResetBins: () => Promise<{ message?: string }>;
+  onSimulateDay: () => Promise<{ status?: string; message?: string }>;
+  onResetBins: () => Promise<{ status?: string; message?: string }>;
   isPendingSimulate: boolean;
   isPendingReset: boolean;
 };
 
 type LogEntry = { type: 'req' | 'res' | 'err'; text: string };
+
+function getResultMessage(status: string | undefined, action: 'simulate' | 'reset') {
+  if (status !== 'success') {
+    return action === 'simulate'
+      ? 'Simulation could not be completed.'
+      : 'Bins could not be reset.';
+  }
+
+  return action === 'simulate'
+    ? 'Simulation successful: time advanced by one day and bin fill levels increased.'
+    : 'Reset successful: all bin fill levels are now 0%.';
+}
 
 export function SimulationTab({ onSimulateDay, onResetBins, isPendingSimulate, isPendingReset }: Props) {
   const [log, setLog] = useState<LogEntry[]>([
@@ -23,7 +35,7 @@ export function SimulationTab({ onSimulateDay, onResetBins, isPendingSimulate, i
     try {
       const result = await onSimulateDay();
       addLog({ type: 'res', text: `< 200 OK` });
-      addLog({ type: 'res', text: `< ${JSON.stringify(result)}` });
+      addLog({ type: 'res', text: `< ${getResultMessage(result.status, 'simulate')}` });
     } catch (err) {
       addLog({ type: 'err', text: `< ERROR: ${(err as Error).message}` });
     }
@@ -35,7 +47,7 @@ export function SimulationTab({ onSimulateDay, onResetBins, isPendingSimulate, i
     try {
       const result = await onResetBins();
       addLog({ type: 'res', text: `< 200 OK` });
-      addLog({ type: 'res', text: `< ${JSON.stringify(result)}` });
+      addLog({ type: 'res', text: `< ${getResultMessage(result.status, 'reset')}` });
     } catch (err) {
       addLog({ type: 'err', text: `< ERROR: ${(err as Error).message}` });
     }

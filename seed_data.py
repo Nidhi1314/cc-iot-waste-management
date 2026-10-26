@@ -11,25 +11,25 @@ load_dotenv()
 # Database connection URL from .env
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Coğrafi Merkez: Manhattan, Times Square
+# Geographic center: Manhattan, Times Square
 CENTER_LAT = 40.7580
 CENTER_LON = -73.9855
-LAT_SPREAD = 0.015  # Enlemde rastgele dağılım (Yaklaşık 1.5 - 2 km yarıçap)
-LON_SPREAD = 0.015  # Boylamda rastgele dağılım
+LAT_SPREAD = 0.015  # Random latitude spread (approx. 1.5 - 2 km radius)
+LON_SPREAD = 0.015  # Random longitude spread
 
-# Konfigürasyon
+# Configuration
 NUM_BINS = 50
 CAPACITIES = [100.0, 150.0, 200.0]
 
-# Tablo isimlerini esnek bir yapıda tutuyoruz. 
-# Eğer şemanızda tabloları büyük harfle (CamelCase vb.) oluşturduysanız,
-# tırnak işaretleriyle escape etmelisiniz: TABLE_SMART_BINS = '"Smart_Bins"'
+# Keep table names flexible.
+# If your schema uses uppercase table names (CamelCase, etc.),
+# you must escape them with quotes: TABLE_SMART_BINS = '"Smart_Bins"'
 TABLE_SMART_BINS = "smart_bins"
 TABLE_ROUTES = "routes"
 TABLE_SENSOR_DATA = "sensor_data"
 
 def generate_bin_data(index):
-    """Tek bir çöp kutusu (Smart Bin) için Sıfırıncı Gün verisi üretir."""
+    """Generates initial-day data for a single smart bin."""
     lat = random.uniform(CENTER_LAT - LAT_SPREAD, CENTER_LAT + LAT_SPREAD)
     lon = random.uniform(CENTER_LON - LON_SPREAD, CENTER_LON + LON_SPREAD)
     
@@ -47,32 +47,32 @@ def generate_bin_data(index):
 
 def main():
     if not DATABASE_URL:
-        print("Hata: DATABASE_URL .env dosyasında bulunamadı!")
-        print("Lütfen kök dizinde bir .env dosyası oluşturun ve Neon DB URL'nizi ekleyin.")
+        print("Error: DATABASE_URL was not found in the .env file!")
+        print("Please create a .env file in the project root and add your Neon DB URL.")
         return
 
     conn = None
     cursor = None
     try:
-        # 1. Neon DB'ye bağlan
-        print("Neon PostgreSQL veritabanına bağlanılıyor...")
-        # Neon DB connection URL'leri bazen SSL gerektirebilir
+        # 1. Connect to Neon DB
+        print("Connecting to Neon PostgreSQL database...")
+        # Neon DB connection URLs sometimes require SSL
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
         cursor = conn.cursor()
 
-        # 2. Veritabanı Temizliği (TRUNCATE CASCADE - Nükleer Seçenek)
-        print("Eski veriler kökünden temizleniyor (TRUNCATE CASCADE)...")
+        # 2. Database cleanup (TRUNCATE CASCADE)
+        print("Clearing existing data (TRUNCATE CASCADE)...")
         truncate_query = f"TRUNCATE TABLE {TABLE_SMART_BINS}, {TABLE_ROUTES}, {TABLE_SENSOR_DATA} CASCADE;"
         cursor.execute(truncate_query)
-        print("Veritabanı başarıyla temizlendi.")
+        print("Database successfully cleared.")
 
-        # 3. Kutu verilerini üret
-        print(f"Manhattan/Times Square bölgesi çevresinde {NUM_BINS} adet çöp kutusu üretiliyor...")
-        # Kutu adreslerinin 1'den başlaması için (1, NUM_BINS + 1) aralığını kullanıyoruz
+        # 3. Generate bin data
+        print(f"Generating {NUM_BINS} smart bins around the Manhattan/Times Square area...")
+        # Use the range (1, NUM_BINS + 1) so bin addresses start at 1
         bins_data = [generate_bin_data(i) for i in range(1, NUM_BINS + 1)]
 
-        # 4. Veritabanına Yükleme (Batch Insert)
-        # Yeni kolonlar eklendi: address ve total_depth_cm. last_updated veritabanı tarafından NOW() ile doldurulacak.
+        # 4. Insert into the database (Batch Insert)
+        # New columns were added: address and total_depth_cm. last_updated is filled by the database with NOW().
         insert_query = f"""
             INSERT INTO {TABLE_SMART_BINS} (
                 id, latitude, longitude, total_depth_cm, max_capacity_kg, status, current_fill_level, needs_collection, address, last_updated
@@ -81,27 +81,27 @@ def main():
             );
         """
         
-        # execute_batch ile verileri tek seferde gönderiyoruz (Performanslı I/O)
+        # Send all data in one batch with execute_batch (efficient I/O)
         extras.execute_batch(cursor, insert_query, bins_data)
         
-        # Transaction'ı bitir (Commit)
+        # Finish the transaction (Commit)
         conn.commit()
         
-        # 5. İşlem bitince başarı mesajı bas
-        print("Başarılı: 50 adet Sıfırıncı Gün çöp kutusu verisi üretildi ve veritabanına kaydedildi.")
+        # 5. Print success message after completion
+        print("Success: 50 initial-day smart bin records were generated and saved to the database.")
 
     except (Exception, psycopg2.Error) as error:
-        # Hata durumunda işlemi geri al
+        # Roll back the transaction in case of an error
         if conn:
             conn.rollback()
-        print(f"Veritabanı işlemi sırasında hata oluştu: {error}")
+        print(f"A database error occurred: {error}")
     finally:
-        # Bağlantıları güvenli şekilde kapat (Graceful Shutdown)
+        # Close database connections safely (Graceful Shutdown)
         if cursor:
             cursor.close()
         if conn:
             conn.close()
-            print("PostgreSQL bağlantısı kapatıldı.")
+            print("PostgreSQL connection closed.")
 
 if __name__ == "__main__":
     main()

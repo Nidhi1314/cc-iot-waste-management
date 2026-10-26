@@ -56,7 +56,7 @@ async function seed() {
   // ---------- SMART BINS ----------
   await db.insert(smartBins).values([
     {
-      address: 'Kadıköy Meydanı, İstanbul',
+      address: 'Central Plaza, Istanbul',
       latitude: 40.99,
       longitude: 29.023,
       totalDepthCm: 80,
@@ -66,7 +66,7 @@ async function seed() {
       needsCollection: true,
     },
     {
-      address: 'Bağdat Caddesi No:45, İstanbul',
+      address: 'Main Street No:45, Istanbul',
       latitude: 40.9713,
       longitude: 29.0556,
       totalDepthCm: 80,
@@ -76,7 +76,7 @@ async function seed() {
       needsCollection: true,
     },
     {
-      address: 'Moda Sahili Parkı, İstanbul',
+      address: 'Coastal Park, Istanbul',
       latitude: 40.9847,
       longitude: 29.0285,
       totalDepthCm: 100,
@@ -86,7 +86,7 @@ async function seed() {
       needsCollection: true,
     },
     {
-      address: 'Feneryolu Durağı, İstanbul',
+      address: 'Feneryolu Station, Istanbul',
       latitude: 40.9787958,
       longitude: 29.0488297,
       totalDepthCm: 80,
@@ -96,7 +96,7 @@ async function seed() {
       needsCollection: true,
     },
     {
-      address: 'Göztepe Metro İstasyonu, İstanbul',
+      address: 'Goztepe Metro Station, Istanbul',
       latitude: 40.9756,
       longitude: 29.022,
       totalDepthCm: 120,
@@ -106,7 +106,7 @@ async function seed() {
       needsCollection: true,
     },
     {
-      address: 'Suadiye Plajı, İstanbul',
+      address: 'Suadiye Beach, Istanbul',
       latitude: 40.9612,
       longitude: 29.0681,
       totalDepthCm: 90,
@@ -116,7 +116,7 @@ async function seed() {
       needsCollection: false,
     },
     {
-      address: 'Caddebostan Sahili, İstanbul',
+      address: 'Caddebostan Shore, Istanbul',
       latitude: 40.965,
       longitude: 29.059,
       totalDepthCm: 80,

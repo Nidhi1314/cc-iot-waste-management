@@ -16,13 +16,13 @@ from ortools.constraint_solver import pywrapcp, routing_enums_pb2
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
-# .env dosyasından Neon DB bağlantısını al
+# Load the Neon DB connection from .env
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 app = FastAPI(title="WasteWise CVRP & Simulation Engine")
 
-# --- CORS KONFİGÜRASYONU EKLENDİ ---
+# --- CORS CONFIGURATION ADDED ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000"],
@@ -31,7 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- SENİN MEVCUT VERİ MODELLERİN ---
+# --- YOUR EXISTING DATA MODELS ---
 class BinInput(BaseModel):
     id: str
     lat: float
@@ -51,13 +51,13 @@ def health():
     return {"status": "ok"}
 
 # =====================================================================
-# 🚀 YENİ: ZAMAN MAKİNESİ (SİMÜLASYON VE RESET) ENDPOINT'LERİ
+# 🚀 NEW: TIME MACHINE (SIMULATION AND RESET) ENDPOINTS
 # =====================================================================
 @app.post("/reset-bins")
 def reset_bins():
     """
-    Jüri demosu için güvenli sıfırlama: Kutu ID'lerini değiştirmeden (ML modelini bozmadan)
-    tüm kutuların doluluk oranını %0'a çeker ve needs_collection durumlarını temizler.
+    Safe reset for demo purposes: without changing bin IDs (so the ML model is not affected),
+    it sets all bins' fill levels to 0% and clears their needs_collection status.
     """
     conn = None
     try:
@@ -70,7 +70,7 @@ def reset_bins():
                 needs_collection = FALSE
         """)
         
-        # Eğer aktif rotalar varsa onları da tamamlandı işaretleyebiliriz ki harita temizlensin
+        # If active routes exist, we can mark them as completed so the map clears
         cur.execute("""
             UPDATE routes 
             SET is_completed = TRUE 
@@ -78,7 +78,7 @@ def reset_bins():
         """)
         
         conn.commit()
-        return {"status": "success", "message": "Demo sıfırlandı: Tüm kutular %0 boşaltıldı!"}
+        return {"status": "success", "message": "Demo reset successful: all bins emptied to 0%!"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
     finally:
@@ -89,28 +89,28 @@ def reset_bins():
 @app.post("/simulate-next-day")
 def simulate_next_day():
     """
-    Sadece jüri sunumu ve testler içindir. 
-    Veritabanındaki tüm kutuların doluluk oranına %15-%30 arası çöp ekler.
+    Intended only for demo presentations and tests.
+    Adds waste to all bins in the database at a rate of 15%-30% fill.
     """
     conn = None
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
         
-        # smart_bins tablosundaki tüm kutuları daha yavaş/gerçekçi doldur (Her basışta %5 ile %25 arası)
+        # Fill all bins in smart_bins more slowly and realistically (each time by 5% to 25%)
         cur.execute("""
             UPDATE smart_bins 
             SET current_fill_level = LEAST(current_fill_level + floor(random() * 20 + 5)::int, 100)
         """)
         
-        # %75'i geçenlerin needs_collection statüsünü otomatik güncelle
+        # Automatically update needs_collection status for bins that exceed 75%
         cur.execute("""
             UPDATE smart_bins 
             SET needs_collection = TRUE 
             WHERE current_fill_level >= 75
         """)
         conn.commit()
-        return {"status": "success", "message": "Simülasyon başarılı: Zaman 1 gün ileri sarıldı ve çöpler doldu!"}
+        return {"status": "success", "message": "Simulation successful: time advanced by 1 day and waste levels increased!"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
     finally:
@@ -119,35 +119,35 @@ def simulate_next_day():
             conn.close()
 
 # =====================================================================
-# 🔮 YENİ: MAKİNE ÖĞRENMESİ (PREDICTIVE ROUTING) ENDPOINT'LERİ
+# 🔮 NEW: MACHINE LEARNING (PREDICTIVE ROUTING) ENDPOINTS
 # =====================================================================
 @app.post("/ml/train-model")
 def train_ml_model():
     """
-    ML modelini (Random Forest) sentetik geçmiş verisi üzerinde eğitir ve kaydeder.
+    Trains and saves the ML model (Random Forest) using synthetic historical data.
     """
     conn = None
     try:
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
         
-        # Sadece son 90 günlük veriyi al
+        # Fetch only the last 90 days of data
         query = "SELECT bin_id, fill_percentage, recorded_at FROM sensor_data ORDER BY bin_id, recorded_at"
-        # pandas uyarısını önlemek için SQLAlchemy yerine doğrudan psycopg2 kullanıyoruz
+        # Use psycopg2 directly instead of SQLAlchemy to avoid pandas warnings
         import warnings
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             df = pd.read_sql(query, conn)
         
         if df.empty:
-            return {"status": "error", "message": "Eğitim için veritabanında sensör verisi bulunamadı. Lütfen önce seed_ml_data.py çalıştırın."}
+            return {"status": "error", "message": "No sensor data was found in the database for training. Please run seed_ml_data.py first."}
 
-        # Veri Hazırlığı
+        # Data preparation
         df['recorded_at'] = pd.to_datetime(df['recorded_at'])
         df['hour'] = df['recorded_at'].dt.hour
         df['day_of_week'] = df['recorded_at'].dt.dayofweek
         df['is_weekend'] = (df['day_of_week'] >= 5).astype(int)
         
-        # 4 saatlik periyottaki artışı hedef (target) olarak belirle
+        # Set the increase over a 4-hour period as the target
         df['next_fill'] = df.groupby('bin_id')['fill_percentage'].shift(-1)
         df = df.dropna()
         df = df[df['next_fill'] >= df['fill_percentage']]
@@ -161,17 +161,17 @@ def train_ml_model():
         X = df[features]
         y = df['fill_increase_4h']
         
-        # Eğitim
+        # Training
         model = RandomForestRegressor(n_estimators=100, random_state=42)
         model.fit(X, y)
         
-        # Modeli kaydet (algoritma dizinine)
+        # Save the model (in the algorithm directory)
         joblib.dump(model, 'rf_model.pkl')
         joblib.dump(le, 'le_bin_id.pkl')
         
         return {
             "status": "success", 
-            "message": "Model başarıyla eğitildi ve rf_model.pkl olarak kaydedildi.", 
+            "message": "Model trained successfully and saved as rf_model.pkl.", 
             "r2_score": round(model.score(X, y), 4)
         }
         
@@ -189,9 +189,9 @@ class PredictiveOptimizeRequest(BaseModel):
 @app.post("/ml/predictive-cvrp")
 def predictive_cvrp(payload: PredictiveOptimizeRequest):
     """
-    Mevcut dolulukları ve eğitilmiş ML modelini kullanarak 'hours_ahead' saat sonraki
-    tahmini dolulukları hesaplar ve %75'i geçecek (veya halihazırda geçmiş) kutuları 
-    içeren bir rota oluşturur.
+    Uses current fill levels and the trained ML model to estimate the predicted fill levels
+    'hours_ahead' hours from now and creates a route containing bins that will exceed
+    (or have already exceeded) 75% capacity.
     """
     try:
         now = datetime.now()
@@ -209,7 +209,7 @@ def predictive_cvrp(payload: PredictiveOptimizeRequest):
 
         if bins_to_predict:
             if not os.path.exists('rf_model.pkl') or not os.path.exists('le_bin_id.pkl'):
-                return {"status": "error", "message": "ML modeli bulunamadı. Lütfen önce /ml/train-model endpoint'ini çağırın."}
+                return {"status": "error", "message": "ML model not found. Please call the /ml/train-model endpoint first."}
 
             model = joblib.load('rf_model.pkl')
             le = joblib.load('le_bin_id.pkl')
@@ -219,7 +219,7 @@ def predictive_cvrp(payload: PredictiveOptimizeRequest):
 
             for bin_obj in bins_to_predict:
                 if bin_obj.id not in known_bins:
-                    continue # Yeni eklenmiş ve henüz eğitilmemiş bir çöp kutusu, atla
+                    continue # Skip a newly added bin that has not been trained yet
 
                 bin_id_encoded = le.transform([bin_obj.id])[0]
 
@@ -248,7 +248,7 @@ def predictive_cvrp(payload: PredictiveOptimizeRequest):
                     )
 
         if not predicted_critical_bins:
-            return {"status": "info", "message": f"{payload.hours_ahead} saat içinde %75'i geçecek çöp kutusu tahmin edilmiyor."}
+            return {"status": "info", "message": f"No bins are predicted to exceed 75% within {payload.hours_ahead} hours."}
             
         request_payload = OptimizeRequest(
             assigned_car_id=payload.assigned_car_id, 
@@ -263,10 +263,10 @@ def predictive_cvrp(payload: PredictiveOptimizeRequest):
         return result
         
     except Exception as e:
-        return {"status": "error", "message": f"ML tahmin hatası: {str(e)}"}
+        return {"status": "error", "message": f"ML prediction error: {str(e)}"}
 
 # =====================================================================
-# 🧠 SENİN MEVCUT OR-TOOLS ALGORİTMAN (HİÇ DOKUNULMADI)
+# 🧠 YOUR EXISTING OR-TOOLS ALGORITHM (UNTOUCHED)
 # =====================================================================
 @app.post("/optimize-cvrp")
 def optimize_cvrp(payload: OptimizeRequest):
