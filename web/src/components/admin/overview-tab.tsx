@@ -77,7 +77,7 @@ export function OverviewTab({ bins, criticalBins, routes, activeRoutes, operator
           <div>
             <h1 className="text-sm font-bold text-[#0F172A]">Operations Overview & Telemetry Health</h1>
             <p className="text-xs text-[#475569]">
-              Live CVRP route optimization, 50 telemetry smart nodes active across Manhattan Sector 04
+              Live CVRP route optimization across Delhi Central Hub
             </p>
           </div>
         </div>
@@ -114,8 +114,8 @@ export function OverviewTab({ bins, criticalBins, routes, activeRoutes, operator
         />
         <StatBlock
           label="Active Routes"
-          value={activeRoutes.length}
-          sub="Vehicles en route"
+          value={Math.min(activeRoutes.length, operatorAccounts.length)}
+          sub={`${Math.min(activeRoutes.length, operatorAccounts.length)} of ${operatorAccounts.length} units dispatched`}
           icon={Truck}
           variant="forest"
         />

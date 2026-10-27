@@ -76,8 +76,14 @@ export function MapTab({
   // KPI Calculations
   const kpis = useMemo(() => {
     const totalFleet = Math.max(vehicles.length, 3);
-    const activeTrucks = activeRoutes.filter((r) => !r.isCompleted && r.assignedCarId).length;
-    const fleetUtilizationPct = Math.round((activeTrucks / totalFleet) * 100);
+    const activeAssignedVehicles = new Set(
+      activeRoutes
+        .filter((r) => !r.isCompleted && r.assignedCarId)
+        .map((r) => r.assignedCarId)
+    );
+    const activeTrucks = Math.min(activeAssignedVehicles.size, totalFleet);
+    const rawUtilization = Math.round((activeTrucks / totalFleet) * 100);
+    const fleetUtilizationPct = Math.min(rawUtilization, 100);
 
     const highRiskCount = criticalBins.length;
 
@@ -148,6 +154,12 @@ export function MapTab({
 
   const binsById = useMemo(() => new Map(bins.map((b) => [b.id, b])), [bins]);
 
+  const handleResetGrid = async () => {
+    setSelectedRouteId('');
+    setSelectedBinId(null);
+    await onResetBins();
+  };
+
   const isAnyActionPending = isSimulating || isResetting || isRouting || isPredictiveRouting;
 
   return (
@@ -170,7 +182,7 @@ export function MapTab({
           <div className="absolute bottom-3 left-3 z-[400] flex items-center gap-3 rounded-lg border border-[#E2E8F0] bg-white/95 px-3 py-1.5 text-[11px] font-medium text-[#475569] shadow-sm backdrop-blur-sm">
             <span className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-[#2D6A4F]" />
-              <span>Manhattan Sector 04</span>
+              <span>Delhi Central Hub</span>
             </span>
             <span className="text-[#CBD5E1]">|</span>
             <span>{bins.length} Telemetry Nodes</span>
@@ -216,7 +228,7 @@ export function MapTab({
                   {kpis.fleetUtilizationPct}%
                 </p>
                 <p className="text-[10px] text-[#475569] truncate">
-                  {kpis.activeTrucks}/{kpis.totalFleet} Active
+                  {kpis.activeTrucks}/{kpis.totalFleet} Active Units
                 </p>
               </div>
 
@@ -346,11 +358,11 @@ export function MapTab({
 
               {/* Reset Grid */}
               <button
-                onClick={onResetBins}
+                onClick={handleResetGrid}
                 disabled={isAnyActionPending}
                 className="flex items-center justify-center gap-1.5 rounded-md border border-[#E2E8F0] bg-white px-3 py-1.5 text-xs font-semibold text-[#64748B] hover:bg-[#F8FAFC] hover:text-[#0F172A] transition disabled:opacity-50"
                 type="button"
-                title="Reset all bin fill levels to 0%"
+                title="Reset all bin fill levels to nominal baseline (<50%) and clear active routes"
               >
                 <RotateCcw className={`h-3.5 w-3.5 ${isResetting ? 'animate-spin' : ''}`} />
                 <span>{isResetting ? 'Resetting...' : 'Reset Grid'}</span>

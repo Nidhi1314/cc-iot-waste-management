@@ -278,7 +278,9 @@ const updateGeneratorMutation = useMutation({
   const resetMutation = useMutation({
     mutationFn: resetBinsToZero,
     onSuccess: () => {
-      addLog('< [RESET] All bins flushed to 0% and active routes cleared');
+      addLog('< [RESET] All bins flushed to nominal baseline (<50%) and active routes cleared');
+      queryClient.setQueryData(['routes', 'active'], []);
+      queryClient.invalidateQueries({ queryKey: ['bins', 'critical'] });
       queryClient.invalidateQueries({ queryKey: ['bins'] });
       queryClient.invalidateQueries({ queryKey: ['routes'] });
       queryClient.invalidateQueries({ queryKey: ['routes', 'active'] });

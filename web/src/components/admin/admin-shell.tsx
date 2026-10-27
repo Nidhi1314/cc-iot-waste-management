@@ -251,7 +251,7 @@ export function AdminShell(props: AdminShellProps) {
             {/* Depot Zone */}
             <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#475569]">
               <MapPin className="h-3.5 w-3.5 text-[#2D6A4F]" />
-              <span>Depot: <strong className="text-[#0F172A]">Manhattan Sector 04</strong></span>
+              <span>Depot: <strong className="text-[#0F172A]">Delhi Central Hub</strong></span>
             </div>
           </div>
 

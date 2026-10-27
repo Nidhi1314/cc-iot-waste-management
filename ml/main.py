@@ -118,7 +118,7 @@ def reset_bins():
         
         cur.execute("""
             UPDATE smart_bins 
-            SET current_fill_level = 0,
+            SET current_fill_level = floor(random() * 20 + 15)::int,
                 needs_collection = FALSE,
                 fill_started_at = NULL,
                 last_updated = now()
@@ -132,7 +132,7 @@ def reset_bins():
         """)
         
         conn.commit()
-        return {"status": "success", "message": "Demo reset successful: all bins emptied to 0%!"}
+        return {"status": "success", "message": "Demo reset successful: all bins reset to nominal (<50%) and active routes cleared!"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
     finally:
