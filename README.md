@@ -8,6 +8,8 @@ WasteWise is a smart waste-collection platform made of three services:
 
 The API and ML service require a PostgreSQL-compatible `DATABASE_URL`. No database is included in this repository; use a development Neon database (or another database supported by the Neon serverless driver). `ORS_API_KEY` is optional and enables road-following directions on the map. Keep it in the root `.env`; the API proxies direction requests so the key is not sent to browser code.
 
+The organics workflow supports configurable fill and waste-age collection triggers, scheduled age checks, generator-specific sensor simulation and forecasting, destination-aware organic route planning, measured collection/delivery records, and impact metrics. Apply all migrations before using these features.
+
 ## Requirements
 
 - Node.js 22 LTS and npm
@@ -56,7 +58,7 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:5173`. The dashboard uses the API at `http://localhost:3000`; its simulation controls call the ML service at `http://localhost:8000`.
+Open `http://localhost:5173`. The dashboard uses the API at `http://localhost:3000`; the API securely proxies simulation requests to the ML service.
 
 ### 4. Seed demo data (optional)
 
@@ -96,7 +98,14 @@ To train for local development, first start the ML service using step 1, then in
 curl -X POST http://localhost:8000/ml/train-model
 ```
 
-The service reads the synthetic history from Neon and saves the trained model files in its current working directory. A successful response includes `"status":"success"`. Do not run seed scripts against production data.
+The service reads sensor history and generator metadata from Neon, evaluates a time-ordered holdout, and saves the model and evaluation metadata under `ml/models/`. A successful response includes MAE/RMSE evaluation metrics. Do not run seed scripts against production data.
+
+## Organics operations
+
+- Admin settings control both the fill threshold and maximum waste age. The API checks age-based triggers on startup and every minute; sensor updates and manual fill changes apply the same limits immediately.
+- Use **Optimize organic routes** to prioritize collection-ready generators, match each waste category to an open/active facility, and constrain each trip by vehicle capacity and remaining daily destination capacity.
+- Use **Collections & impact** to record measured kilograms, contamination, and collection time, then confirm facility delivery. The dashboard aggregates confirmed delivered kilograms, completed organic trips, recorded route distance, and contamination.
+- The **Simulation** tab adds generator-type/category-based waste and stores a corresponding sensor reading for each active generator. It is a demo tool, not a physical sensor feed.
 
 ### 5. Verify the local setup
 
@@ -140,7 +149,7 @@ In a second terminal, train the model in the running ML container by calling its
 curl -X POST http://localhost:8000/ml/train-model
 ```
 
-Training runs inside the container and saves model files there. The model file is not stored in Neon; if the ML container is removed or recreated, train again before using predictive routing. The synthetic sensor history remains in Neon unless one of the seed scripts is run again.
+Training runs inside the container and saves model files to the persistent `ml-models` volume. The model file is not stored in Neon; it survives ordinary container recreation while that volume is retained. The synthetic sensor history remains in Neon unless one of the seed scripts is run again.
 
 The services are available at:
 
@@ -151,6 +160,10 @@ The services are available at:
 | ML service / docs | <http://localhost:8000/docs> |
 
 Compose waits for the ML health check before starting the API. Apply database migrations once before using the app (`cd api && npm run db:migrate`); Compose does not automatically seed or modify the database. Stop the services with `docker compose down`.
+
+### Deploying to a cloud host
+
+The repository provides container images and a Compose deployment, but does not deploy to a cloud account automatically. Configure a managed PostgreSQL URL, a unique secret `JWT_SECRET`, comma-separated public dashboard origins in `FRONTEND_ORIGINS`, and the browser-reachable HTTPS API URL in `VITE_API_BASE_URL` before building the web image. Compose binds service ports to loopback; place a TLS reverse proxy on the host in front of the dashboard and API, and keep the ML service reachable only over the internal network. Persist `/app/models` with a durable volume. Run `npm run db:migrate` against the target database before switching traffic. Never use the demo seed scripts or demo credentials in production.
 
 ## Team contribution areas
 

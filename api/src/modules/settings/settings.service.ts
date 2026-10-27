@@ -86,13 +86,20 @@ export class SettingsService {
     // Recalculate existing collection flags when
     // the fill threshold changes.
     if (
-      dto.fillThreshold !== undefined &&
-      newThreshold !== current.fillThreshold
+      (dto.fillThreshold !== undefined &&
+        newThreshold !== current.fillThreshold) ||
+      (dto.maxWasteAgeHours !== undefined &&
+        newMaxAge !== current.maxWasteAgeHours)
     ) {
+      const ageCutoff = new Date(Date.now() - newMaxAge * 60 * 60 * 1000);
       await this.db.update(smartBins).set({
-        needsCollection: sql`
-              ${smartBins.currentFillLevel} >= ${newThreshold}
-            `,
+        needsCollection: sql`(
+          ${smartBins.currentFillLevel} >= ${newThreshold}
+          OR (
+            ${smartBins.currentFillLevel} > 0
+            AND COALESCE(${smartBins.fillStartedAt}, ${smartBins.lastUpdated}) <= ${ageCutoff}
+          )
+        )`,
       });
     }
 

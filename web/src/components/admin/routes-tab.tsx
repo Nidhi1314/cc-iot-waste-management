@@ -11,10 +11,12 @@ type Props = {
   onChangeAssignedVehicle: (id: string) => void;
   onGenerate: () => void;
   onGeneratePredictive: () => void;
+  onGenerateOrganic: () => void;
   onCompleteRoute: (id: string) => void;
   onDeleteRoute: (id: string) => void;
   isPending: boolean;
   isPredictivePending: boolean;
+  isOrganicPending: boolean;
   completePending: boolean;
   deletePending: boolean;
   actionLog: string[];
@@ -28,10 +30,12 @@ export function RoutesTab({
   onChangeAssignedVehicle,
   onGenerate,
   onGeneratePredictive,
+  onGenerateOrganic,
   onCompleteRoute,
   onDeleteRoute,
   isPending,
   isPredictivePending,
+  isOrganicPending,
   completePending,
   deletePending,
   actionLog,
@@ -44,7 +48,7 @@ export function RoutesTab({
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? null;
   const binsById = new Map(bins.map((b) => [b.id, b]));
   const driverOptions = operatorAccounts.filter((o) => o.role === 'DRIVER');
-  const isAnyPending = isPending || isPredictivePending || completePending || deletePending;
+  const isAnyPending = isPending || isPredictivePending || isOrganicPending || completePending || deletePending;
 
   return (
     <div className="flex h-[calc(100vh-56px)] flex-col gap-4 overflow-auto p-5">
@@ -78,6 +82,15 @@ export function RoutesTab({
               type="button"
             >
               {isPending ? 'Generating...' : 'Generate route'}
+            </button>
+
+            <button
+              className="rounded-full border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={isAnyPending || !assignedVehicleId}
+              onClick={onGenerateOrganic}
+              type="button"
+            >
+              {isOrganicPending ? 'Optimizing…' : 'Optimize organic routes'}
             </button>
 
             <button

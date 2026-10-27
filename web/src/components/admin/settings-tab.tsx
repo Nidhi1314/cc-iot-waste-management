@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type {
   SystemSettings,
   UpdateSettingsRequest,
@@ -26,14 +26,6 @@ export function SettingsTab({
 
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    setFillThreshold(settings.fillThreshold);
-    setMaxWasteAgeHours(settings.maxWasteAgeHours);
-  }, [
-    settings.fillThreshold,
-    settings.maxWasteAgeHours,
-  ]);
 
   const hasChanges =
     fillThreshold !== settings.fillThreshold ||

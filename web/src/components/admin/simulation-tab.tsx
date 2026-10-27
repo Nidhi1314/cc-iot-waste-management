@@ -17,7 +17,7 @@ function getResultMessage(status: string | undefined, action: 'simulate' | 'rese
   }
 
   return action === 'simulate'
-    ? 'Simulation successful: time advanced by one day and bin fill levels increased.'
+    ? 'Simulation successful: generator-specific fill and sensor readings were recorded for the next day.'
     : 'Reset successful: all bin fill levels are now 0%.';
 }
 
@@ -67,8 +67,8 @@ export function SimulationTab({ onSimulateDay, onResetBins, isPendingSimulate, i
         <div className="rounded-2xl border border-terminalBorder bg-terminalPanel p-5 shadow-sm">
           <p className="text-base font-bold text-terminalText">Simulate one day</p>
           <p className="mt-2 text-sm leading-6 text-terminalMuted">
-            Increments all bin fill levels by 5–25% randomly. Flags bins ≥75% as needing collection.
-            Useful for demonstrating reactive and predictive route generation.
+            Simulates 24 hours of waste generation using each generator type, capacity, and waste category.
+            A sensor reading is recorded for every active generator using the configured collection threshold.
           </p>
           <button
             className="mt-4 w-full rounded-full border border-terminalAccent bg-terminalAccent py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"

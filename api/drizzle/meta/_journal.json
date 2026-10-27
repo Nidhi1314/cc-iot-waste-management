@@ -43,6 +43,13 @@
       "when": 1793109718891,
       "tag": "0005_odd_infant_terrible",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793112574676,
+      "tag": "0006_aberrant_steel_serpent",
+      "breakpoints": true
     }
   ]
 }

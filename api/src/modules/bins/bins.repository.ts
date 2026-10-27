@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, or, sql } from 'drizzle-orm';
 
 import { DRIZZLE } from '../../infrastructure/database/database.module';
 import { type DrizzleClient } from '../../infrastructure/database/db';
@@ -42,10 +42,20 @@ export class BinsRepository {
   }
 
   async findNeedingCollection(): Promise<SmartBin[]> {
+    const settings = await this.settingsService.getSettings();
+    const ageCutoff = new Date(
+      Date.now() - settings.maxWasteAgeHours * 60 * 60 * 1000,
+    );
+
     return this.db
       .select()
       .from(smartBins)
-      .where(eq(smartBins.needsCollection, true));
+      .where(
+        or(
+          eq(smartBins.needsCollection, true),
+          sql`(${smartBins.currentFillLevel} > 0 AND COALESCE(${smartBins.fillStartedAt}, ${smartBins.lastUpdated}) <= ${ageCutoff})`,
+        ),
+      );
   }
 
   async create(data: NewSmartBin): Promise<SmartBin> {
@@ -71,13 +81,32 @@ export class BinsRepository {
     id: string,
     fillLevel: number,
   ): Promise<SmartBin | undefined> {
-    const threshold = await this.settingsService.getFillThreshold();
+    const settings = await this.settingsService.getSettings();
+    const ageCutoff = new Date(
+      Date.now() - settings.maxWasteAgeHours * 60 * 60 * 1000,
+    );
 
     const result = await this.db
       .update(smartBins)
       .set({
         currentFillLevel: fillLevel,
-        needsCollection: fillLevel >= threshold,
+        needsCollection: sql`(
+          ${fillLevel} >= ${settings.fillThreshold}
+          OR (
+            ${fillLevel} > 0
+            AND COALESCE(${smartBins.fillStartedAt}, ${smartBins.lastUpdated}) <= ${ageCutoff}
+          )
+        )`,
+        fillStartedAt:
+          fillLevel === 0
+            ? null
+            : sql`COALESCE(
+                ${smartBins.fillStartedAt},
+                CASE
+                  WHEN ${smartBins.currentFillLevel} = 0 THEN now()
+                  ELSE ${smartBins.lastUpdated}
+                END
+              )`,
         lastUpdated: new Date(),
       })
       .where(eq(smartBins.id, id))

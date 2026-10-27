@@ -9,11 +9,20 @@ import {
   deleteRoute,
   generateRoutes,
   generatePredictiveRoutes,
+  generateOrganicRoutes,
   getActiveRoutes,
   getRoutes,
   simulateNextDay,
   resetBinsToZero,
 } from '../features/routes/api';
+import {
+  confirmDelivery,
+  createCollection,
+  getCollections,
+  getImpactSummary,
+} from '../features/collections/api';
+import type { CollectionPayload } from '../features/collections/api';
+import { getDestinations } from '../features/destinations/api';
 import { queryClient } from '../lib/query-client';
 import { AdminShell } from '../components/admin/admin-shell';
 import { DriverShell } from '../components/driver/driver-shell';
@@ -124,6 +133,24 @@ const updateGeneratorMutation = useMutation({
     enabled: canQuery,
   });
 
+  const destinationsQuery = useQuery({
+    queryKey: ['destinations'],
+    queryFn: getDestinations,
+    enabled: canQuery && isAdmin,
+  });
+
+  const collectionsQuery = useQuery({
+    queryKey: ['collections'],
+    queryFn: getCollections,
+    enabled: canQuery && isAdmin,
+  });
+
+  const impactQuery = useQuery({
+    queryKey: ['collections', 'impact'],
+    queryFn: getImpactSummary,
+    enabled: canQuery && isAdmin,
+  });
+
   const operatorAccountsQuery = useQuery({
     queryKey: ['vehicles', { limit: 100, offset: 0 }],
     queryFn: () => getOperatorAccounts(100, 0),
@@ -168,6 +195,36 @@ const updateGeneratorMutation = useMutation({
     },
     onError: (error) => {
       addLog(`< [ERR] ${(error as Error).message}`);
+    },
+  });
+
+  const generateOrganicMutation = useMutation({
+    mutationFn: generateOrganicRoutes,
+    onSuccess: (data) => {
+      addLog(`< [OK] organic route(s) generated: ${data.length}`);
+      queryClient.invalidateQueries({ queryKey: ['routes'] });
+      queryClient.invalidateQueries({ queryKey: ['routes', 'active'] });
+      queryClient.invalidateQueries({ queryKey: ['bins'] });
+      queryClient.invalidateQueries({ queryKey: ['bins', 'critical'] });
+    },
+    onError: (error) => addLog(`< [ERR] ${(error as Error).message}`),
+  });
+
+  const createCollectionMutation = useMutation({
+    mutationFn: createCollection,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['collections'] });
+      queryClient.invalidateQueries({ queryKey: ['collections', 'impact'] });
+      queryClient.invalidateQueries({ queryKey: ['bins'] });
+      queryClient.invalidateQueries({ queryKey: ['bins', 'critical'] });
+    },
+  });
+
+  const deliveryMutation = useMutation({
+    mutationFn: confirmDelivery,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['collections'] });
+      queryClient.invalidateQueries({ queryKey: ['collections', 'impact'] });
     },
   });
 
@@ -252,6 +309,15 @@ const updateGeneratorMutation = useMutation({
     generatePredictiveMutation.mutate({ assignedCarId: assignedVehicleId });
   };
 
+  const runGenerateOrganic = () => {
+    if (!assignedVehicleId) {
+      addLog('< [ERR] select a vehicle first');
+      return;
+    }
+    addLog('> POST /routes/generate-organic');
+    generateOrganicMutation.mutate({ assignedCarId: assignedVehicleId });
+  };
+
   if (!user) return null;
 
   if (isDriver) {
@@ -318,17 +384,36 @@ isSavingGenerator={
       onChangeAssignedVehicle={setAssignedVehicleId}
       onGenerate={runGenerate}
       onGeneratePredictive={runGeneratePredictive}
+      onGenerateOrganic={runGenerateOrganic}
       onCompleteRoute={(id) => completeMutation.mutate(id)}
       onDeleteRoute={(id) => deleteRouteMutation.mutate(id)}
       onSimulateDay={() => simulateMutation.mutateAsync()}
       onResetBins={() => resetMutation.mutateAsync()}
       isPendingGenerate={generateMutation.isPending}
       isPendingPredictive={generatePredictiveMutation.isPending}
+      isPendingOrganic={generateOrganicMutation.isPending}
       completePending={completeMutation.isPending}
       deletePending={deleteRouteMutation.isPending}
       isPendingSimulate={simulateMutation.isPending}
       isPendingReset={resetMutation.isPending}
       actionLog={actionLog}
+      destinations={destinationsQuery.data ?? []}
+      collections={collectionsQuery.data ?? []}
+      impact={impactQuery.data ?? null}
+      operationsError={
+        collectionsQuery.isError
+          ? (collectionsQuery.error as Error).message
+          : impactQuery.isError
+            ? (impactQuery.error as Error).message
+            : null
+      }
+      onCreateCollection={(payload: CollectionPayload) =>
+        createCollectionMutation.mutateAsync(payload).then(() => {})
+      }
+      onConfirmDelivery={(id) => deliveryMutation.mutateAsync(id).then(() => {})}
+      isSavingCollection={
+        createCollectionMutation.isPending || deliveryMutation.isPending
+      }
       onLogout={logout}
     />
   );

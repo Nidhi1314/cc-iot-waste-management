@@ -6,9 +6,10 @@ NestJS + TypeScript backend for smart waste-bin monitoring, vehicle/operator acc
 
 - Authenticates users (admin/driver) with JWT.
 - Ingests sensor readings from devices using machine auth (HMAC).
-- Tracks bin fill levels and marks bins that need collection.
+- Tracks bin fill levels and marks bins for collection by configured fill threshold or waste age.
 - Manages vehicles and bins.
-- Generates collection routes via an external optimization service.
+- Generates destination-aware organic routes via an external optimizer.
+- Records measured collections and confirmed deliveries for impact reporting.
 
 ## Tech stack
 
@@ -44,10 +45,11 @@ Each module follows controller -> service -> repository.
 
 1. Sensor device sends reading to `POST /sensors/data`.
 2. Backend validates HMAC signature and payload.
-3. Backend stores `sensor_data` row and updates bin fill level in one transaction.
-4. Bin is marked `needsCollection=true` when fill level is `>= 75`.
+3. Backend stores a `sensor_data` row and updates the bin fill level.
+4. Bin is marked `needsCollection=true` when it reaches the configured fill threshold or its waste age limit.
 5. Admin triggers `POST /routes/generate` to call optimization service.
-6. Generated routes are validated and stored transactionally.
+6. Generated routes are validated and stored.
+7. Organic operations use `POST /routes/generate-organic`, `POST /collections`, and `PATCH /collections/:id/delivery`.
 
 ## Security model
 
@@ -109,7 +111,18 @@ Each module follows controller -> service -> repository.
 - `GET /routes/active` -> `ADMIN`, `DRIVER`
 - `GET /routes/:id` -> `ADMIN`, `DRIVER`
 - `POST /routes/generate` -> `ADMIN`
+- `POST /routes/generate-organic` -> `ADMIN`
 - `PATCH /routes/:id/complete` -> `ADMIN`, `DRIVER`
+
+### Collections and simulation
+
+- `GET /collections` -> `ADMIN`, `DRIVER`
+- `GET /collections/impact` -> `ADMIN`
+- `POST /collections` -> `ADMIN`, `DRIVER`
+- `PATCH /collections/:id/delivery` -> `ADMIN`, `DRIVER`
+- `POST /simulation/next-day` and `POST /simulation/reset` -> `ADMIN`
+
+The scheduled waste-age service re-evaluates collection flags every minute. Organic route generation checks category eligibility, facility hours and remaining daily capacity, vehicle load, and collection urgency. Simulation requests are authenticated at the NestJS API and proxied to the private ML service.
 
 ## Request validation and error behavior
 

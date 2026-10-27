@@ -23,6 +23,13 @@ export function generatePredictiveRoutes(payload: GenerateRouteRequest) {
   });
 }
 
+export function generateOrganicRoutes(payload: GenerateRouteRequest) {
+  return apiRequest<RouteItem[]>('/routes/generate-organic', {
+    method: 'POST',
+    body: payload,
+  });
+}
+
 export function completeRoute(routeId: string) {
   return apiRequest<RouteItem>(`/routes/${routeId}/complete`, {
     method: 'PATCH',
@@ -35,32 +42,18 @@ export function deleteRoute(routeId: string) {
   });
 }
 
-// ============================================================================
-// SIMULATION & DEMO ENDPOINTS (FastAPI - Port 8000)
-// ============================================================================
-
 export async function resetBinsToZero() {
-  const response = await fetch('http://localhost:8000/reset-bins', {
+  return apiRequest<{ status: string; message: string }>('/simulation/reset', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
   });
-  if (!response.ok) {
-    throw new Error('Failed to reset bins');
-  }
-  return response.json();
 }
 
 export async function simulateNextDay() {
-  const response = await fetch('http://localhost:8000/simulate-next-day', {
+  return apiRequest<{
+    status: string;
+    message: string;
+    simulated_generators?: number;
+  }>('/simulation/next-day', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
   });
-  if (!response.ok) {
-    throw new Error('Failed to simulate next day');
-  }
-  return response.json();
 }

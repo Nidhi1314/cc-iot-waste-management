@@ -77,6 +77,14 @@ export class RoutesController {
     return this.routesService.generatePredictive(dto, 24);
   }
 
+  @Post('generate-organic')
+  @Roles('ADMIN')
+  async generateOrganic(
+    @Body(new ZodValidationPipe(generateRouteSchema)) dto: GenerateRouteDto,
+  ) {
+    return this.routesService.generateOrganic(dto);
+  }
+
   @Patch(':id/complete')
   @Roles('ADMIN', 'DRIVER')
   markCompleted(@Param('id', ParseUUIDPipe) id: string) {

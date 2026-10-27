@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import { DRIZZLE } from '../../infrastructure/database/database.module';
 import { type DrizzleClient } from '../../infrastructure/database/db';
@@ -50,13 +50,27 @@ export class SensorsService {
 
       const fillLevel = Math.round(dto.fillPercentage);
 
-      const threshold = await this.settingsService.getFillThreshold();
+      const settings = await this.settingsService.getSettings();
+      const ageCutoff = new Date(
+        Date.now() - settings.maxWasteAgeHours * 60 * 60 * 1000,
+      );
 
       const updatedBin = await this.db
         .update(smartBins)
         .set({
           currentFillLevel: fillLevel,
-          needsCollection: fillLevel >= threshold,
+          needsCollection: sql`(
+            ${fillLevel} >= ${settings.fillThreshold}
+            OR (
+              ${fillLevel} > 0
+              AND COALESCE(${smartBins.fillStartedAt}, ${smartBins.lastUpdated}) <= ${ageCutoff}
+            )
+          )`,
+          fillStartedAt: sql`CASE
+            WHEN ${fillLevel} = 0 THEN NULL
+            WHEN ${smartBins.currentFillLevel} = 0 THEN now()
+          ELSE COALESCE(${smartBins.fillStartedAt}, ${smartBins.lastUpdated})
+          END`,
           lastUpdated: new Date(),
         })
         .where(eq(smartBins.id, dto.binId))

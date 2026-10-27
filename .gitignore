@@ -6,6 +6,7 @@ venv/
 .env
 rf_model.pkl
 le_bin_id.pkl
+ml/models/*.pkl
 
 # Frontend
 web/node_modules/

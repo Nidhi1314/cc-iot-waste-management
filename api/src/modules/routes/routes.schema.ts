@@ -7,6 +7,7 @@ import {
   jsonb,
 } from 'drizzle-orm/pg-core';
 import { vehicles } from '../vehicles/vehicles.schema';
+import { destinations } from '../destinations/destinations.schema';
 
 // Shape of each waypoint stored in the JSONB array
 // This matches what the Python algorithm returns
@@ -19,6 +20,9 @@ export interface Waypoint {
 export const routes = pgTable('routes', {
   id: uuid('id').primaryKey().defaultRandom(),
   assignedCarId: uuid('assigned_car_id').references(() => vehicles.id, {
+    onDelete: 'set null',
+  }),
+  destinationId: uuid('destination_id').references(() => destinations.id, {
     onDelete: 'set null',
   }),
   // JSONB: [{ step: 1, binId: "uuid", collectedKg: 60 }, ...]

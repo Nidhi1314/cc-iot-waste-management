@@ -10,6 +10,13 @@ import { LoadingState, ErrorState } from '../shared/states';
 import type { GeneratorPayload } from '../../features/bins/api';
 import { SettingsTab } from './settings-tab';
 import { DestinationsTab } from './destinations-tab';
+import { OperationsTab } from './operations-tab';
+import type { Destination } from '../../features/destinations/api';
+import type {
+  CollectionPayload,
+  CollectionRecord,
+  ImpactSummary,
+} from '../../features/collections/api';
 
 import type {
   SystemSettings,
@@ -22,6 +29,7 @@ type AdminTab =
   | 'bins'
   | 'destinations'
   | 'routes'
+  | 'operations'
   | 'operators'
   | 'simulation'
   | 'settings';
@@ -61,17 +69,26 @@ isSavingGenerator: boolean;
   onChangeAssignedVehicle: (id: string) => void;
   onGenerate: () => void;
   onGeneratePredictive: () => void;
+  onGenerateOrganic: () => void;
   onCompleteRoute: (id: string) => void;
   onDeleteRoute: (id: string) => void;
   onSimulateDay: () => Promise<{ message?: string }>;
   onResetBins: () => Promise<{ message?: string }>;
   isPendingGenerate: boolean;
   isPendingPredictive: boolean;
+  isPendingOrganic: boolean;
   completePending: boolean;
   deletePending: boolean;
   isPendingSimulate: boolean;
   isPendingReset: boolean;
   actionLog: string[];
+  destinations: Destination[];
+  collections: CollectionRecord[];
+  impact: ImpactSummary | null;
+  operationsError: string | null;
+  onCreateCollection: (payload: CollectionPayload) => Promise<void>;
+  onConfirmDelivery: (id: string) => Promise<void>;
+  isSavingCollection: boolean;
   onLogout: () => void;
 };
 
@@ -80,6 +97,7 @@ const NAV_ITEMS: { id: AdminTab; icon: string; label: string }[] = [
   { id: 'map',         icon: '◈',   label: 'Surveillance' },
   { id: 'bins', icon: '⬡', label: 'Generators' },
   { id: 'routes',      icon: '⟳',   label: 'Routes' },
+  { id: 'operations',  icon: '⇄',   label: 'Collections & impact' },
   { id: 'operators',   icon: '⚙',   label: 'Operators' },
   { id: 'simulation',  icon: '◎',   label: 'Simulation' },
   { id: 'settings', icon: '⚙', label: 'Settings' },
@@ -246,15 +264,31 @@ export function AdminShell(props: AdminShellProps) {
                 onChangeAssignedVehicle={props.onChangeAssignedVehicle}
                 onGenerate={props.onGenerate}
                 onGeneratePredictive={props.onGeneratePredictive}
+                onGenerateOrganic={props.onGenerateOrganic}
                 onCompleteRoute={props.onCompleteRoute}
                 onDeleteRoute={props.onDeleteRoute}
                 isPending={props.isPendingGenerate}
                 isPredictivePending={props.isPendingPredictive}
+                isOrganicPending={props.isPendingOrganic}
                 completePending={props.completePending}
                 deletePending={props.deletePending}
                 actionLog={props.actionLog}
               />
             )
+          )}
+
+          {activeTab === 'operations' && (
+            <OperationsTab
+              bins={props.bins}
+              routes={props.routes}
+              destinations={props.destinations}
+              collections={props.collections}
+              impact={props.impact}
+              onCreateCollection={props.onCreateCollection}
+              onConfirmDelivery={props.onConfirmDelivery}
+              saving={props.isSavingCollection}
+              error={props.operationsError}
+            />
           )}
 
           {activeTab === 'operators' && (
@@ -288,6 +322,7 @@ export function AdminShell(props: AdminShellProps) {
               </div>
             ) : props.settings ? (
               <SettingsTab
+                key={props.settings.updatedAt}
                 settings={props.settings}
                 onSave={props.onSaveSettings}
                 isSaving={props.isSavingSettings}

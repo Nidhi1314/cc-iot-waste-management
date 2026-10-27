@@ -4,8 +4,12 @@ services:
       context: ./ml
     environment:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env}
+      MODEL_DIR: /app/models
+    volumes:
+      - ml-models:/app/models
+    restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     healthcheck:
       test:
         - CMD
@@ -25,19 +29,23 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       ORS_API_KEY: ${ORS_API_KEY:-}
       ALGORITHM_URL: http://ml:8000
-      FRONTEND_ORIGIN: http://localhost:5173
+      FRONTEND_ORIGINS: ${FRONTEND_ORIGINS:-http://localhost:5173}
+    restart: unless-stopped
     depends_on:
       ml:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
 
   web:
     build:
       context: ./web
       args:
-        VITE_API_BASE_URL: http://localhost:3000
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:3000}
     depends_on:
       - api
     ports:
-      - "5173:80"
+      - "127.0.0.1:5173:80"
+
+volumes:
+  ml-models:

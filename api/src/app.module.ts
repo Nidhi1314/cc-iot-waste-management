@@ -10,6 +10,8 @@ import { RoutesModule } from './modules/routes/routes.module';
 import { SettingsModule } from './modules/settings/settings.module';
 
 import { DestinationsModule } from './modules/destinations/destinations.module';
+import { CollectionsModule } from './modules/collections/collections.module';
+import { SimulationModule } from './modules/simulation/simulation.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { DestinationsModule } from './modules/destinations/destinations.module';
     SensorsModule,
     RoutesModule,
     DestinationsModule,
+    CollectionsModule,
+    SimulationModule,
   ],
 })
 export class AppModule {}

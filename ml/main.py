@@ -1,12 +1,12 @@
 import math
 import os
 import psycopg2
-import uuid
-import json
+import random
+from pathlib import Path
 from typing import List
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import joblib
 from datetime import datetime, timedelta
 
@@ -19,6 +19,8 @@ from dotenv import load_dotenv
 # Load the Neon DB connection from .env
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
+MODEL_DIR = Path(os.getenv("MODEL_DIR", Path(__file__).parent / "models"))
+MODEL_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(title="WasteWise CVRP & Simulation Engine")
 
@@ -38,13 +40,62 @@ class BinInput(BaseModel):
     lng: float
     current_fill_level: float = Field(ge=0, le=100)
     max_capacity_kg: float = Field(gt=0)
+    generator_type: str | None = None
+    waste_category: str | None = None
+    est_daily_kg: float | None = Field(default=None, gt=0)
+    priority: float = 0
+
+class DestinationInput(BaseModel):
+    lat: float = Field(ge=-90, le=90)
+    lng: float = Field(ge=-180, le=180)
 
 class OptimizeRequest(BaseModel):
     assigned_car_id: str
     bins: List[BinInput]
+    vehicle_capacity_kg: float | None = Field(default=None, gt=0)
+    destination: DestinationInput | None = None
 
 def compute_distance(left: BinInput, right: BinInput) -> int:
-    return int(math.hypot(left.lat - right.lat, left.lng - right.lng) * 100000)
+    return int(compute_distance_km(left, right) * 1000)
+
+def compute_distance_km(left: BinInput, right: BinInput) -> float:
+    latitude_a, latitude_b = math.radians(left.lat), math.radians(right.lat)
+    latitude_delta = latitude_b - latitude_a
+    longitude_delta = math.radians(right.lng - left.lng)
+    arc = (
+        math.sin(latitude_delta / 2) ** 2
+        + math.cos(latitude_a)
+        * math.cos(latitude_b)
+        * math.sin(longitude_delta / 2) ** 2
+    )
+    return 6371 * 2 * math.atan2(math.sqrt(arc), math.sqrt(1 - arc))
+
+GENERATOR_CODES = {
+    "RESTAURANT": 0,
+    "HOTEL": 1,
+    "CANTEEN": 2,
+    "VEGETABLE_MARKET": 3,
+}
+WASTE_CODES = {"VEG_SCRAPS": 0, "COOKED_FOOD": 1, "MIXED_ORGANIC": 2}
+
+def ml_features(records):
+    return pd.DataFrame([
+        {
+            "generator_type": GENERATOR_CODES.get(item.get("generator_type"), -1),
+            "waste_category": WASTE_CODES.get(item.get("waste_category"), -1),
+            "est_daily_kg": float(item.get("est_daily_kg") or 0),
+            "hour": int(item["hour"]),
+            "is_weekend": int(item["is_weekend"]),
+        }
+        for item in records
+    ])
+
+def get_collection_settings(cur):
+    cur.execute(
+        "SELECT fill_threshold, max_waste_age_hours FROM system_settings WHERE id = 1"
+    )
+    settings = cur.fetchone()
+    return (settings[0], settings[1]) if settings else (75, 24)
 
 @app.get("/health")
 def health():
@@ -60,6 +111,7 @@ def reset_bins():
     it sets all bins' fill levels to 0% and clears their needs_collection status.
     """
     conn = None
+    cur = None
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
@@ -67,7 +119,9 @@ def reset_bins():
         cur.execute("""
             UPDATE smart_bins 
             SET current_fill_level = 0,
-                needs_collection = FALSE
+                needs_collection = FALSE,
+                fill_started_at = NULL,
+                last_updated = now()
         """)
         
         # If active routes exist, we can mark them as completed so the map clears
@@ -83,7 +137,8 @@ def reset_bins():
         return {"status": "error", "message": str(e)}
     finally:
         if conn:
-            cur.close()
+            if cur:
+                cur.close()
             conn.close()
 
 @app.post("/simulate-next-day")
@@ -93,29 +148,84 @@ def simulate_next_day():
     Adds waste to all bins in the database at a rate of 15%-30% fill.
     """
     conn = None
+    cur = None
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
-        
-        # Fill all bins in smart_bins more slowly and realistically (each time by 5% to 25%)
+        threshold, max_age_hours = get_collection_settings(cur)
         cur.execute("""
-            UPDATE smart_bins 
-            SET current_fill_level = LEAST(current_fill_level + floor(random() * 20 + 5)::int, 100)
+            SELECT id, total_depth_cm, max_capacity_kg, current_fill_level,
+                   generator_type, waste_category, est_daily_kg, fill_started_at
+            FROM smart_bins
+            WHERE status = 'ACTIVE'
         """)
-        
-        # Automatically update needs_collection status for bins that exceed 75%
-        cur.execute("""
-            UPDATE smart_bins 
-            SET needs_collection = TRUE 
-            WHERE current_fill_level >= 75
-        """)
+        bins = cur.fetchall()
+        simulated_count = 0
+        for (
+            bin_id, depth_cm, max_capacity_kg, current_fill_level,
+            generator_type, waste_category, est_daily_kg, fill_started_at,
+        ) in bins:
+            generator_type = generator_type or "RESTAURANT"
+            daily_defaults = {
+                "RESTAURANT": 12.0,
+                "HOTEL": 18.0,
+                "CANTEEN": 20.0,
+                "VEGETABLE_MARKET": 16.0,
+            }
+            category_factor = {
+                "VEG_SCRAPS": 1.15,
+                "COOKED_FOOD": 1.0,
+                "MIXED_ORGANIC": 1.08,
+            }.get(waste_category, 1.0)
+            daily_kg = float(est_daily_kg or daily_defaults.get(generator_type, 12.0))
+            increase_kg = max(
+                0.0,
+                daily_kg * random.uniform(0.75, 1.25) * category_factor,
+            )
+            previous_level = int(current_fill_level or 0)
+            next_level = min(
+                100,
+                int(round(previous_level + (increase_kg / max_capacity_kg) * 100)),
+            )
+            now = datetime.now().astimezone()
+            fill_started = fill_started_at or (now if next_level else None)
+            needs_collection = next_level >= threshold or (
+                fill_started is not None
+                and (now - fill_started).total_seconds()
+                >= max_age_hours * 3600
+            )
+            distance_cm = max(0.0, depth_cm * (1 - next_level / 100))
+            cur.execute("""
+                UPDATE smart_bins
+                SET current_fill_level = %s,
+                    needs_collection = %s,
+                    fill_started_at = COALESCE(fill_started_at, CASE WHEN %s > 0 THEN now() END),
+                    last_updated = now()
+                WHERE id = %s
+            """, (next_level, needs_collection, next_level, bin_id))
+            cur.execute("""
+                INSERT INTO sensor_data
+                    (bin_id, measure_distance_cm, fill_percentage, battery_voltage, recorded_at)
+                VALUES (%s, %s, %s, %s, now())
+            """, (
+                bin_id,
+                distance_cm,
+                float(next_level),
+                round(random.uniform(3.55, 4.15), 2),
+            ))
+            simulated_count += 1
         conn.commit()
-        return {"status": "success", "message": "Simulation successful: time advanced by 1 day and waste levels increased!"}
+        return {
+            "status": "success",
+            "message": f"Simulated 24 hours for {simulated_count} generators with type-based sensor readings.",
+            "simulated_generators": simulated_count,
+        }
     except Exception as e:
         return {"status": "error", "message": str(e)}
     finally:
         if conn:
-            cur.close()
+            if cur:
+                cur.close()
             conn.close()
 
 # =====================================================================
@@ -131,7 +241,13 @@ def train_ml_model():
         conn = psycopg2.connect(DATABASE_URL, sslmode='require')
         
         # Fetch only the last 90 days of data
-        query = "SELECT bin_id, fill_percentage, recorded_at FROM sensor_data ORDER BY bin_id, recorded_at"
+        query = """
+            SELECT s.bin_id, s.fill_percentage, s.recorded_at,
+                   b.generator_type, b.waste_category, b.est_daily_kg
+            FROM sensor_data s
+            JOIN smart_bins b ON b.id = s.bin_id
+            ORDER BY s.recorded_at, s.bin_id
+        """
         # Use psycopg2 directly instead of SQLAlchemy to avoid pandas warnings
         import warnings
         with warnings.catch_warnings():
@@ -143,36 +259,60 @@ def train_ml_model():
 
         # Data preparation
         df['recorded_at'] = pd.to_datetime(df['recorded_at'])
-        df['hour'] = df['recorded_at'].dt.hour
-        df['day_of_week'] = df['recorded_at'].dt.dayofweek
-        df['is_weekend'] = (df['day_of_week'] >= 5).astype(int)
-        
-        # Set the increase over a 4-hour period as the target
         df['next_fill'] = df.groupby('bin_id')['fill_percentage'].shift(-1)
+        df['next_recorded_at'] = df.groupby('bin_id')['recorded_at'].shift(-1)
         df = df.dropna()
-        df = df[df['next_fill'] >= df['fill_percentage']]
-        df['fill_increase_4h'] = df['next_fill'] - df['fill_percentage']
-        
-        # Encoding
-        le = LabelEncoder()
-        df['bin_id_encoded'] = le.fit_transform(df['bin_id'])
-        
-        features = ['bin_id_encoded', 'hour', 'is_weekend']
-        X = df[features]
-        y = df['fill_increase_4h']
-        
-        # Training
+        df['elapsed_hours'] = (
+            df['next_recorded_at'] - df['recorded_at']
+        ).dt.total_seconds() / 3600
+        df = df[
+            (df['elapsed_hours'] > 0)
+            & (df['elapsed_hours'] <= 72)
+            & (df['next_fill'] >= df['fill_percentage'])
+        ].copy()
+        if len(df) < 5:
+            return {
+                "status": "error",
+                "message": "At least five consecutive valid sensor-reading pairs are required to train and evaluate the generator forecast.",
+            }
+        df['hour'] = df['recorded_at'].dt.hour
+        df['is_weekend'] = (df['recorded_at'].dt.dayofweek >= 5).astype(int)
+        df['fill_increase_per_hour'] = (
+            df['next_fill'] - df['fill_percentage']
+        ) / df['elapsed_hours']
+        records = df.to_dict('records')
+        X = ml_features(records)
+        y = df['fill_increase_per_hour']
+
+        split_at = max(1, int(len(df) * 0.8))
+        if split_at >= len(df):
+            split_at = len(df) - 1
+        train_x, test_x = X.iloc[:split_at], X.iloc[split_at:]
+        train_y, test_y = y.iloc[:split_at], y.iloc[split_at:]
         model = RandomForestRegressor(n_estimators=100, random_state=42)
+        model.fit(train_x, train_y)
+        predictions = model.predict(test_x)
+        metrics = {
+            "maeFillPercentagePerHour": round(float(mean_absolute_error(test_y, predictions)), 4),
+            "rmseFillPercentagePerHour": round(float(mean_squared_error(test_y, predictions) ** 0.5), 4),
+            "evaluationSamples": int(len(test_y)),
+        }
+        if len(test_y) > 1:
+            metrics["r2Score"] = round(float(r2_score(test_y, predictions)), 4)
         model.fit(X, y)
-        
-        # Save the model (in the algorithm directory)
-        joblib.dump(model, 'rf_model.pkl')
-        joblib.dump(le, 'le_bin_id.pkl')
-        
+        joblib.dump(model, MODEL_DIR / 'rf_model.pkl')
+        joblib.dump(
+            {
+                "evaluated_at": datetime.now().isoformat(),
+                "metrics": metrics,
+            },
+            MODEL_DIR / 'forecast_evaluation.pkl',
+        )
+
         return {
             "status": "success", 
-            "message": "Model trained successfully and saved as rf_model.pkl.", 
-            "r2_score": round(model.score(X, y), 4)
+            "message": "Generator-aware waste forecast trained and evaluated.",
+            "metrics": metrics,
         }
         
     except Exception as e:
@@ -184,7 +324,7 @@ def train_ml_model():
 class PredictiveOptimizeRequest(BaseModel):
     assigned_car_id: str
     bins: List[BinInput]
-    hours_ahead: int = 24
+    hours_ahead: int = Field(default=24, ge=1, le=168)
 
 @app.post("/ml/predictive-cvrp")
 def predictive_cvrp(payload: PredictiveOptimizeRequest):
@@ -196,54 +336,52 @@ def predictive_cvrp(payload: PredictiveOptimizeRequest):
     try:
         now = datetime.now()
         target_time = now + timedelta(hours=payload.hours_ahead)
-        target_is_weekend = 1 if target_time.weekday() >= 5 else 0
+        conn = psycopg2.connect(DATABASE_URL)
+        cur = conn.cursor()
+        threshold, _ = get_collection_settings(cur)
+        cur.close()
+        conn.close()
         
         predicted_critical_bins = [
             bin_obj for bin_obj in payload.bins
-            if bin_obj.current_fill_level >= 75.0
+            if bin_obj.current_fill_level >= threshold
         ]
         bins_to_predict = [
             bin_obj for bin_obj in payload.bins
-            if bin_obj.current_fill_level < 75.0
+            if bin_obj.current_fill_level < threshold
         ]
 
         if bins_to_predict:
-            if not os.path.exists('rf_model.pkl') or not os.path.exists('le_bin_id.pkl'):
+            if not (MODEL_DIR / 'rf_model.pkl').exists():
                 return {"status": "error", "message": "ML model not found. Please call the /ml/train-model endpoint first."}
 
-            model = joblib.load('rf_model.pkl')
-            le = joblib.load('le_bin_id.pkl')
-
-            # Known bins by encoder (to prevent unseen-bin errors)
-            known_bins = set(le.classes_)
+            model = joblib.load(MODEL_DIR / 'rf_model.pkl')
 
             for bin_obj in bins_to_predict:
-                if bin_obj.id not in known_bins:
-                    continue # Skip a newly added bin that has not been trained yet
-
-                bin_id_encoded = le.transform([bin_obj.id])[0]
-
-                features = pd.DataFrame([{
-                    'bin_id_encoded': bin_id_encoded,
-                    'hour': now.hour,
-                    'is_weekend': target_is_weekend
+                features = ml_features([{
+                    "generator_type": bin_obj.generator_type,
+                    "waste_category": bin_obj.waste_category,
+                    "est_daily_kg": bin_obj.est_daily_kg,
+                    "hour": target_time.hour,
+                    "is_weekend": target_time.weekday() >= 5,
                 }])
-
-                predicted_increase_4h = model.predict(features)[0]
-                predicted_increase = (predicted_increase_4h / 4.0) * payload.hours_ahead
+                predicted_increase = max(0, float(model.predict(features)[0])) * payload.hours_ahead
 
                 future_fill_level = min(
                     100.0, bin_obj.current_fill_level + predicted_increase
                 )
 
-                if future_fill_level >= 75.0:
+                if future_fill_level >= threshold:
                     predicted_critical_bins.append(
                         BinInput(
                             id=bin_obj.id,
                             lat=bin_obj.lat,
                             lng=bin_obj.lng,
                             current_fill_level=future_fill_level,
-                            max_capacity_kg=bin_obj.max_capacity_kg
+                            max_capacity_kg=bin_obj.max_capacity_kg,
+                            generator_type=bin_obj.generator_type,
+                            waste_category=bin_obj.waste_category,
+                            est_daily_kg=bin_obj.est_daily_kg,
                         )
                     )
 
@@ -282,17 +420,28 @@ def optimize_cvrp(payload: OptimizeRequest):
         current_fill_level=0,
         max_capacity_kg=1,
     )
-    nodes = [depot, *bins]
+    destination = None
+    if payload.destination:
+        destination = BinInput(
+            id="destination",
+            lat=payload.destination.lat,
+            lng=payload.destination.lng,
+            current_fill_level=0,
+            max_capacity_kg=1,
+        )
+    nodes = [depot, *bins, *([destination] if destination else [])]
 
     demands = [
-        max(0, int((item.current_fill_level / 100.0) * item.max_capacity_kg))
+        max(0, int(round((item.current_fill_level / 100.0) * item.max_capacity_kg * 1000)))
         for item in bins
     ]
-    demands = [0, *demands]
+    demands = [0, *demands, *([0] if destination else [])]
 
     depot_index = 0
-    num_vehicles = 1
-    vehicle_capacities = [100000]
+    end_index = len(nodes) - 1 if destination else depot_index
+    vehicle_capacities = [
+        int(round((payload.vehicle_capacity_kg or 100000) * 1000))
+    ]
 
     distance_matrix = []
     for i in range(len(nodes)):
@@ -300,7 +449,7 @@ def optimize_cvrp(payload: OptimizeRequest):
         distance_matrix.append(row)
 
     manager = pywrapcp.RoutingIndexManager(
-        len(distance_matrix), num_vehicles, depot_index
+        len(distance_matrix), 1, [depot_index], [end_index]
     )
     routing = pywrapcp.RoutingModel(manager)
 
@@ -338,13 +487,14 @@ def optimize_cvrp(payload: OptimizeRequest):
 
     index = routing.Start(0)
     step = 1
-    total_collected_kg = 0
+    total_collected_kg = 0.0
     waypoints_order = []
+    path_nodes = [depot]
 
     while not routing.IsEnd(index):
         node_index = manager.IndexToNode(index)
         if node_index != depot_index:
-            collected_kg = demands[node_index]
+            collected_kg = demands[node_index] / 1000
             total_collected_kg += collected_kg
             waypoints_order.append(
                 {
@@ -353,8 +503,18 @@ def optimize_cvrp(payload: OptimizeRequest):
                     "collected_kg": collected_kg,
                 }
             )
+            path_nodes.append(nodes[node_index])
             step += 1
         index = solution.Value(routing.NextVar(index))
+    if destination:
+        path_nodes.append(destination)
+    else:
+        path_nodes.append(depot)
+
+    total_distance_km = sum(
+        compute_distance_km(left, right)
+        for left, right in zip(path_nodes, path_nodes[1:])
+    )
 
     return {
         "status": "success",
@@ -362,6 +522,7 @@ def optimize_cvrp(payload: OptimizeRequest):
             {
                 "assigned_car_id": payload.assigned_car_id,
                 "total_collected_kg": total_collected_kg,
+                "total_distance_km": round(total_distance_km, 3),
                 "waypoints_order": waypoints_order,
             }
         ],

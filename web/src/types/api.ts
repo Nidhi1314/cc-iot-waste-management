@@ -80,6 +80,7 @@ export type RouteWaypoint = {
 export type RouteItem = {
   id: string;
   assignedCarId: string | null;
+  destinationId: string | null;
   waypointsOrder: RouteWaypoint[];
   totalDistanceKm: number | null;
   isCompleted: boolean;

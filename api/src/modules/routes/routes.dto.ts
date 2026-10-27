@@ -32,6 +32,7 @@ export const directionsResponseSchema = z.object({
 export interface AlgorithmRoute {
   assigned_car_id: string;
   total_collected_kg?: number;
+  total_distance_km?: number;
   waypoints_order: {
     step: number;
     bin_id: string;
@@ -50,6 +51,7 @@ export const algorithmRouteSchema = z.object({
     .string()
     .uuid('Algorithm route assigned_car_id must be UUID'),
   total_collected_kg: z.number().optional(),
+  total_distance_km: z.number().nonnegative().optional(),
   waypoints_order: z.array(
     z.object({
       step: z.number().int().nonnegative(),
