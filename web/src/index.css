@@ -1,284 +1,178 @@
 @import 'leaflet/dist/leaflet.css';
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-    --bg: #f0f5fa;
-    --panel: #ffffff;
-    --panel2: #f8fafc;
-    --border: #e7edf3;
-    --border2: #d5e0ea;
-    --text: #0f172a;
-    --muted: #475569;
-    --soft: #64748b;
-    --dim: #94a3b8;
-    --purple: #0b5cff;
-    --lavender: #1d4ed8;
-    --blue: #1d4ed8;
-    --orange: #d97706;
-    --green: #15803d;
-    --red: #dc2626;
-    --yellow: #d97706;
-    --accent: var(--purple);
-    --accent-2: var(--blue);
-    --accent-glow: #e0effe;
-    --blue-glow: #e0effe;
-    --warn: var(--orange);
-    --warn-glow: #fff7ed;
-    --success: var(--green);
-    --danger: var(--red);
-    --danger-glow: #fef2f2;
-    --on-accent: #ffffff;
+  --bg: #F8FAF6;
+  --canvas: #F8FAF6;
+  --panel: #FFFFFF;
+  --panel2: #F8FAFC;
+  --border: #E2E8F0;
+  --text: #0F172A;
+  --muted: #475569;
+  --soft: #64748B;
 
-    --t-bg: var(--bg);
-    --t-panel: var(--panel);
-    --t-panel2: var(--panel2);
-    --t-border: var(--border);
-    --t-border-bright: var(--border2);
-    --t-text: var(--text);
-    --t-text-dim: var(--muted);
-    --t-muted: var(--soft);
-    --t-soft: var(--soft);
-    --t-accent: var(--purple);
-    --t-accent2: var(--blue);
-    --t-warn: var(--orange);
-    --t-danger: var(--red);
-    --t-danger-bg: var(--danger-glow);
+  --eco-pine: #1B4332;
+  --eco-forest: #2D6A4F;
+  --eco-amber: #D97706;
+  --eco-amber-light: #FEF3C7;
+  --eco-red: #DC2626;
+  --eco-red-light: #FEE2E2;
 
-    --d-bg: var(--bg);
-    --d-panel: var(--panel);
-    --d-panel2: var(--panel2);
-    --d-border: var(--border);
-    --d-border-strong: var(--border2);
-    --d-text: var(--text);
-    --d-muted: var(--muted);
-    --d-soft: var(--soft);
-    --d-accent: var(--purple);
-    --d-accent-hover: var(--lavender);
-    --d-accent-light: var(--accent-glow);
-    --d-accent-blue: var(--blue);
-    --d-accent-blue-light: var(--blue-glow);
-    --d-warn: var(--orange);
-    --d-warn-light: var(--warn-glow);
-    --d-danger: var(--red);
-    --d-danger-light: var(--danger-glow);
-
-    --color-app: var(--bg);
-    --color-panel: var(--panel);
-    --color-panel-2: var(--panel2);
-    --color-line: var(--border);
-    --color-main: var(--text);
-    --color-muted: var(--muted);
-    --color-soft: var(--soft);
-    --color-accent: var(--purple);
-    --color-accent-strong: var(--blue);
-    --color-on-accent: var(--on-accent);
-    --color-success: var(--green);
-    --color-warning: var(--orange);
-    --color-danger: var(--red);
-    --color-danger-bg: var(--danger-glow);
-    --color-empty-bg: #f1f5f9;
-    --color-map-bg: var(--panel);
+  --t-bg: #F8FAF6;
+  --t-panel: #FFFFFF;
+  --t-panel2: #F8FAFC;
+  --t-border: #E2E8F0;
+  --t-text: #0F172A;
+  --t-text-dim: #475569;
+  --t-muted: #64748B;
+  --t-accent: #1B4332;
+  --t-accent2: #2D6A4F;
+  --t-warn: #D97706;
+  --t-danger: #DC2626;
 }
 
 html,
 body,
 #root {
-    min-height: 100%;
-    margin: 0;
+  min-height: 100%;
+  margin: 0;
+  background-color: #F8FAF6;
+  color: #0F172A;
 }
 
 body {
-    min-height: 100vh;
-    background: linear-gradient(135deg, #f0f5fa 0%, #f8fafc 100%);
-    background-attachment: fixed;
-    color: var(--text);
-    font-family: 'Inter', 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
-    -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  background-color: #F8FAF6;
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
-button,
-input,
-select {
-    font: inherit;
-    transition: color 160ms ease, background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+/* Crisp Clean Enterprise Card */
+.eco-card {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04);
+  transition: all 0.15s ease-in-out;
 }
 
-input,
-select {
-    color: var(--text);
+.eco-card:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);
 }
 
-select,
-select option {
-    background-color: var(--panel);
-    color: var(--text);
+/* Subtle Alert Ring for Critical Bins (≥ 80% or high VOC) */
+@keyframes alert-radar {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.75;
+  }
+  70% {
+    transform: scale(2.0);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
 }
 
-:focus-visible {
-    outline: 2px solid var(--blue);
-    outline-offset: 2px;
+.alert-radar-ring {
+  animation: alert-radar 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
 }
 
-.bg-terminal,
-.bg-app {
-    background: linear-gradient(135deg, #f0f5fa 0%, #f8fafc 100%);
+/* Sleek Circular Badges for Map Pins (26px) */
+.eco-marker-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
 }
 
-.bg-terminalPanel,
-.bg-panel {
-    background-color: var(--panel);
+.eco-marker-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  background: #FFFFFF;
+  border-width: 1.5px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.bg-terminalPanel2,
-.bg-panel2 {
-    background-color: var(--panel2);
+.eco-marker-badge:hover {
+  transform: scale(1.18);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.2);
+  z-index: 50;
 }
 
-.bg-terminalPanel.border,
-.bg-terminalPanel.border-terminalBorder,
-.bg-terminalPanel.border-terminalDanger,
-.bg-terminalPanel.border-terminalDanger\/40,
-.bg-panel.border,
-.bg-panel.border-line {
-    border-color: #f1f5f9;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+/* Leaflet Container Overrides */
+.leaflet-container {
+  background: #EAF2EA !important;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif !important;
 }
 
-.bg-terminalPanel2.border,
-.bg-panel2.border {
-    border-color: var(--border);
-    border-radius: 12px;
+/* Desaturated clean cartography filter */
+.leaflet-container .leaflet-tile-pane .leaflet-tile,
+.eco-map-tiles .leaflet-tile,
+.eco-map-tiles img {
+  filter: brightness(0.98) saturate(0.82) hue-rotate(4deg);
 }
 
-.bg-terminal,
-.bg-terminalPanel,
-.bg-terminalPanel2,
-.bg-panel,
-.bg-panel2 {
-    color: var(--text);
+.leaflet-popup-content-wrapper {
+  background: #FFFFFF !important;
+  color: #0F172A !important;
+  border: 1px solid #E2E8F0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.1) !important;
+  padding: 0 !important;
 }
 
-.t-panel,
-.t-card {
-    border: 1px solid #f1f5f9;
-    border-radius: 20px;
-    background: #ffffff;
-    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
-    transition: box-shadow 160ms ease, border-color 160ms ease;
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+  line-height: 1.4 !important;
 }
 
-.t-card:hover {
-    border-color: #e2e8f0;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.07);
+.leaflet-popup-tip {
+  background: #FFFFFF !important;
+  border: 1px solid #E2E8F0 !important;
 }
 
-.t-panel-header {
-    border-bottom: 1px solid var(--border);
-    border-radius: 20px 20px 0 0;
-    padding: 14px 18px;
-    background: #ffffff;
-    color: var(--text);
-    font-family: 'Inter', 'Plus Jakarta Sans', sans-serif;
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0;
+.leaflet-popup-close-button {
+  color: #94A3B8 !important;
+  padding: 6px !important;
 }
 
-table {
-    border-collapse: separate;
-    border-spacing: 0;
+.leaflet-popup-close-button:hover {
+  color: #DC2626 !important;
 }
 
-thead th {
-    color: var(--soft);
-    font-weight: 600;
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
 }
 
-tbody tr:nth-child(even) {
-    background-color: rgba(248, 250, 252, 0.72);
+::-webkit-scrollbar-track {
+  background: #F8FAF6;
 }
 
-tbody tr:hover {
-    background-color: #eff6ff;
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
 }
 
-.confirm-overlay {
-    background: rgba(15, 23, 42, 0.35);
-    animation: modal-fade-in 0.2s ease forwards;
-    backdrop-filter: blur(4px);
-}
-
-.confirm-card {
-    animation: modal-pop-in 0.24s ease forwards;
-}
-
-@keyframes bin-flash {
-    0% { opacity: 0.9; }
-    60% { opacity: 0.4; }
-    100% { opacity: 0; }
-}
-
-.bin-done-flash {
-    animation: bin-flash 0.75s ease-out forwards;
-    pointer-events: none !important;
-}
-
-@keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-}
-
-.cursor-blink {
-    animation: blink 1.6s step-end infinite;
-}
-
-@keyframes slide-up {
-    from { transform: translateY(12px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-}
-
-.slide-up {
-    animation: slide-up 0.2s ease forwards;
-}
-
-@keyframes modal-fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes modal-pop-in {
-    from { opacity: 0; transform: translateY(8px) scale(0.99); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.leaflet-pane { z-index: 4 !important; }
-.leaflet-top,
-.leaflet-bottom { z-index: 5 !important; }
-
-.t-scroll::-webkit-scrollbar,
-.d-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
-
-.t-scroll::-webkit-scrollbar-track,
-.d-scroll::-webkit-scrollbar-track { background: transparent; }
-
-.t-scroll::-webkit-scrollbar-thumb,
-.d-scroll::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: #cbd5e1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        scroll-behavior: auto !important;
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
 }

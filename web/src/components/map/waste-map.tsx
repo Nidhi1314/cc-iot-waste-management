@@ -1,15 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup, Polyline, useMap } from 'react-leaflet';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { apiRequest } from '../../lib/api-client';
 import type { SmartBin, RouteItem } from '../../types/api';
-
-delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
 
 type WasteMapProps = {
   bins: SmartBin[];
@@ -19,20 +12,95 @@ type WasteMapProps = {
   nextStopBinId?: string | null;
   completedBinIds?: Set<string>;
   justCompletedBinId?: string | null;
-  theme: 'dark' | 'light';
+  theme?: string;
   className?: string;
 };
 
-const TILE_DARK = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TILE_LIGHT = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TILE_ATTR =
+// OpenStreetMap tiles
+const OSM_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+const OSM_ATTR =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-function getBinColor(bin: SmartBin, isDone: boolean) {
-  if (isDone) return '#22c55e';
-  if (bin.status === 'DAMAGED' || bin.status === 'OUT_OF_SERVICE') return '#ef4444';
-  if (bin.needsCollection || bin.currentFillLevel >= 75) return '#f59e0b';
-  return '#22c55e';
+/**
+ * Creates small, sleek circular badges:
+ * - Normal (<60%): Clean forest/sage green (#2D6A4F)
+ * - Warning (60-79%): Muted amber (#D97706)
+ * - Critical (≥80%): Rust/coral red (#DC2626) with subtle alert pulse ring
+ */
+function createCustomBinIcon(
+  bin: SmartBin,
+  isSelected: boolean,
+  isNext: boolean,
+  isDone: boolean
+) {
+  const fill = bin.currentFillLevel;
+  const isCritical = fill >= 80 || bin.status === 'DAMAGED' || bin.status === 'OUT_OF_SERVICE';
+  const isWarning = fill >= 60 && fill < 80;
+
+  let borderColor = '#2D6A4F';
+  let bgColor = '#FFFFFF';
+  let textColor = '#2D6A4F';
+  let alertRingHtml = '';
+
+  if (isCritical) {
+    borderColor = '#DC2626';
+    bgColor = '#FEF2F2';
+    textColor = '#DC2626';
+    alertRingHtml = `
+      <span class="absolute inline-flex h-9 w-9 rounded-full bg-red-500/20 alert-radar-ring pointer-events-none"></span>
+    `;
+  } else if (isWarning || bin.needsCollection) {
+    borderColor = '#D97706';
+    bgColor = '#FFFBEB';
+    textColor = '#D97706';
+  } else if (isDone) {
+    borderColor = '#94A3B8';
+    bgColor = '#F1F5F9';
+    textColor = '#64748B';
+  }
+
+  const selectionHalo = isSelected
+    ? `<span class="absolute inline-flex h-10 w-10 rounded-full border-2 border-[#1B4332] pointer-events-none"></span>`
+    : isNext
+    ? `<span class="absolute inline-flex h-10 w-10 rounded-full border border-[#D97706] pointer-events-none"></span>`
+    : '';
+
+  const label = isDone ? 'OK' : `${fill}%`;
+
+  const html = `
+    <div class="eco-marker-container relative flex items-center justify-center">
+      ${alertRingHtml}
+      ${selectionHalo}
+      <div class="eco-marker-badge flex items-center justify-center relative shadow-sm"
+           style="background-color: ${bgColor}; border-color: ${borderColor}; color: ${textColor};">
+        ${label}
+      </div>
+    </div>
+  `;
+
+  return L.divIcon({
+    html,
+    className: 'custom-eco-bin-badge',
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+    popupAnchor: [0, -13],
+  });
+}
+
+function createDepotIcon(label: string = 'DEPOT') {
+  const html = `
+    <div class="relative flex items-center justify-center">
+      <div class="flex items-center gap-1 rounded bg-[#1B4332] px-1.5 py-0.5 text-[9px] font-bold text-white shadow-md border border-white">
+        <span>${label}</span>
+      </div>
+    </div>
+  `;
+  return L.divIcon({
+    html,
+    className: 'depot-map-marker',
+    iconSize: [44, 20],
+    iconAnchor: [22, 10],
+  });
 }
 
 function FitBounds({ bins }: { bins: SmartBin[] }) {
@@ -41,7 +109,7 @@ function FitBounds({ bins }: { bins: SmartBin[] }) {
   useEffect(() => {
     if (fitted.current || bins.length === 0) return;
     const bounds = L.latLngBounds(bins.map((b) => [b.latitude, b.longitude]));
-    map.fitBounds(bounds, { padding: [40, 40] });
+    map.fitBounds(bounds, { padding: [30, 30] });
     fitted.current = true;
   }, [bins, map]);
   return null;
@@ -54,11 +122,8 @@ export function WasteMap({
   selectedBinId,
   nextStopBinId,
   completedBinIds,
-  justCompletedBinId,
-  theme,
   className = '',
 }: WasteMapProps) {
-  // Polyline shows only REMAINING stops (completed ones are trimmed off the front)
   const routePolyline = useMemo<[number, number][]>(() => {
     if (!route || bins.length === 0) return [];
     const binsById = new Map(bins.map((b) => [b.id, b]));
@@ -77,14 +142,11 @@ export function WasteMap({
       .filter((p): p is [number, number] => p !== null);
   }, [route, bins, completedBinIds]);
 
-  const center: [number, number] = bins.length > 0
-    ? [bins[0].latitude, bins[0].longitude]
-    : [40.758, -73.9855];
+  const center: [number, number] =
+    bins.length > 0 ? [bins[0].latitude, bins[0].longitude] : [40.758, -73.9855];
 
-  // OSRM state and fetching logic
   const [realRoutePolyline, setRealRoutePolyline] = useState<[number, number][]>([]);
   const [isRoutingFailed, setIsRoutingFailed] = useState(false);
-  const [isRoutingLoading, setIsRoutingLoading] = useState(false);
 
   useEffect(() => {
     if (routePolyline.length < 2) {
@@ -94,125 +156,121 @@ export function WasteMap({
     }
 
     const fetchRoute = async () => {
-      setIsRoutingLoading(true);
       setIsRoutingFailed(false);
-
       try {
-        // ORS expects [longitude, latitude]
         const coordinates = routePolyline.map(([lat, lng]) => [lng, lat]);
         const data = await apiRequest<{ coordinates: [number, number][] }>(
           '/routes/directions',
           { method: 'POST', body: { coordinates } },
         );
-
-        // ORS returns [longitude, latitude], Leaflet needs [latitude, longitude].
-        setRealRoutePolyline(
-          data.coordinates.map(([lng, lat]) => [lat, lng]),
-        );
-      } catch (error) {
-        console.error('Error fetching real route from ORS:', error);
+        setRealRoutePolyline(data.coordinates.map(([lng, lat]) => [lat, lng]));
+      } catch {
         setIsRoutingFailed(true);
         setRealRoutePolyline([]);
-      } finally {
-        setIsRoutingLoading(false);
       }
     };
 
-    // Add a small debounce to prevent spamming the API if state updates rapidly
-    const timeoutId = setTimeout(() => {
-      fetchRoute();
-    }, 500);
-
+    const timeoutId = setTimeout(fetchRoute, 350);
     return () => clearTimeout(timeoutId);
   }, [routePolyline]);
 
-  const polylineToDraw = (!isRoutingFailed && realRoutePolyline.length > 0) 
-    ? realRoutePolyline 
-    : routePolyline;
+  const polylineToDraw =
+    !isRoutingFailed && realRoutePolyline.length > 0 ? realRoutePolyline : routePolyline;
+
+  const depotStartCoord = polylineToDraw.length > 0 ? polylineToDraw[0] : null;
 
   return (
     <MapContainer
       center={center}
       zoom={15}
       className={`w-full h-full ${className}`}
-      style={{ background: '#f8fafc' }}
+      style={{ background: '#EAF2EA' }}
       zoomControl={true}
     >
       <TileLayer
-        url={theme === 'dark' ? TILE_DARK : TILE_LIGHT}
-        attribution={TILE_ATTR}
+        url={OSM_TILES}
+        attribution={OSM_ATTR}
         maxZoom={19}
+        className="eco-map-tiles"
       />
       <FitBounds bins={bins} />
 
+      {/* Clean Forest-Green Path (#2D6A4F) */}
       {polylineToDraw.length > 1 && (
-        <Polyline
-          positions={polylineToDraw}
-          color={
-            isRoutingLoading
-              ? '#9ca3af' // gray while loading
-              : route?.isCompleted
-              ? '#94a3b8'
-              : theme === 'dark'
-              ? '#0b5cff'
-              : '#2563eb'
-          }
-          weight={route?.isCompleted ? 2 : 4}
-          opacity={route?.isCompleted ? 0.45 : isRoutingLoading ? 0.6 : 0.85}
-          dashArray={route?.isCompleted || isRoutingLoading || isRoutingFailed ? '7 5' : undefined}
-        />
+        <>
+          <Polyline
+            positions={polylineToDraw}
+            color="#2D6A4F"
+            weight={3.5}
+            opacity={0.9}
+            lineCap="round"
+            lineJoin="round"
+          />
+          <Polyline
+            positions={polylineToDraw}
+            color="#2D6A4F"
+            weight={7}
+            opacity={0.2}
+            lineCap="round"
+            lineJoin="round"
+          />
+        </>
       )}
 
+      {/* Depot Marker */}
+      {depotStartCoord && (
+        <Marker position={depotStartCoord} icon={createDepotIcon('DEPOT START')} />
+      )}
+
+      {/* Small Sleek Circular Badges */}
       {bins.map((bin) => {
         const isSelected = selectedBinId === bin.id;
         const isNext = nextStopBinId === bin.id;
         const isDone = completedBinIds?.has(bin.id) ?? false;
-        const isJustDone = justCompletedBinId === bin.id;
-        const routeDone = route?.isCompleted ?? false;
-        const color = getBinColor(bin, isDone || routeDone);
+        const customIcon = createCustomBinIcon(bin, isSelected, isNext, isDone);
 
         return (
-          <React.Fragment key={bin.id}>
-            {/* Flash ring — animates outward opacity 1→0 on the just-completed bin */}
-            {isJustDone && (
-              <CircleMarker
-                center={[bin.latitude, bin.longitude]}
-                radius={20}
-                pathOptions={{
-                  color: '#22c55e',
-                  fillColor: '#22c55e',
-                  fillOpacity: 0.25,
-                  weight: 2,
-                  className: 'bin-done-flash',
-                }}
-                interactive={false}
-              />
-            )}
-            <CircleMarker
-              center={[bin.latitude, bin.longitude]}
-              radius={isSelected ? 12 : isNext ? 14 : isDone ? 6 : 8}
-              pathOptions={{
-                color: isSelected ? '#ffffff' : isNext ? '#ffffff' : color,
-                fillColor: color,
-                fillOpacity: isDone ? 0.75 : routeDone ? 0.35 : 0.9,
-                weight: isSelected ? 3 : isNext ? 3 : isDone ? 1 : 1.5,
-              }}
-              eventHandlers={{ click: () => onSelectBin?.(bin.id) }}
-            >
-              <Popup>
-                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: '13px', minWidth: '160px' }}>
-                  <p style={{ fontWeight: 600, marginBottom: 4 }}>{bin.address}</p>
-                  <p style={{ color: '#64748b', marginBottom: 2 }}>
-                    Fill:{' '}
-                    <strong style={{ color: bin.currentFillLevel >= 75 ? '#d97706' : '#16a34a' }}>
-                      {bin.currentFillLevel}%
-                    </strong>
-                  </p>
-                  <p style={{ color: '#64748b' }}>Status: {bin.status}</p>
+          <Marker
+            key={bin.id}
+            position={[bin.latitude, bin.longitude]}
+            icon={customIcon}
+            eventHandlers={{
+              click: () => onSelectBin?.(bin.id),
+            }}
+          >
+            <Popup>
+              <div className="font-sans text-xs min-w-[190px] p-0.5 text-[#0F172A]">
+                <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-1.5 mb-1.5">
+                  <span className="font-mono text-[11px] font-bold text-[#1B4332]">
+                    NODE #{bin.id.slice(0, 6).toUpperCase()}
+                  </span>
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                      bin.currentFillLevel >= 80
+                        ? 'bg-[#FEE2E2] text-[#DC2626]'
+                        : bin.currentFillLevel >= 60
+                        ? 'bg-[#FEF3C7] text-[#D97706]'
+                        : 'bg-[#DCFCE7] text-[#2D6A4F]'
+                    }`}
+                  >
+                    {bin.currentFillLevel}% Fill
+                  </span>
                 </div>
-              </Popup>
-            </CircleMarker>
-          </React.Fragment>
+                <p className="font-medium text-[#0F172A] leading-snug">{bin.address}</p>
+                <div className="flex justify-between text-[#475569] text-[11px] mt-1.5 pt-1 border-t border-[#F1F5F9]">
+                  <span>Payload: {bin.maxCapacityKg}kg</span>
+                  <span className="font-semibold text-[#1B4332]">{bin.status}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onSelectBin?.(bin.id)}
+                  className="mt-2.5 w-full rounded-md bg-[#1B4332] py-1 text-center font-semibold text-white hover:bg-[#143527] transition text-[11px]"
+                >
+                  Inspect Telemetry
+                </button>
+              </div>
+            </Popup>
+          </Marker>
         );
       })}
     </MapContainer>

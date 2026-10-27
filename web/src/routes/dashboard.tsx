@@ -63,7 +63,7 @@ export function DashboardPage() {
   const generateMutation = useMutation({
     mutationFn: generateRoutes,
     onSuccess: (data) => {
-      addLog(`< [OK] route generated: ${data[0]?.id ?? 'unknown'}`);
+      addLog(`< [OK] Route generated: ${data[0]?.id?.slice(0, 8) ?? 'unknown'}`);
       queryClient.invalidateQueries({ queryKey: ['routes'] });
       queryClient.invalidateQueries({ queryKey: ['routes', 'active'] });
       queryClient.invalidateQueries({ queryKey: ['bins', 'critical'] });
@@ -85,9 +85,9 @@ export function DashboardPage() {
         );
         const routeLabel = data.length === 1 ? 'route' : 'routes';
         const stopLabel = stopCount === 1 ? 'stop' : 'stops';
-        const firstRouteId = data[0] ? ` | id: ${data[0].id}` : '';
+        const firstRouteId = data[0] ? ` | id: ${data[0].id.slice(0, 8)}` : '';
         addLog(
-          `< [OK] predictive result: ${data.length} ${routeLabel}, ${stopCount} ${stopLabel}${firstRouteId}`,
+          `< [OK] Predictive result: ${data.length} ${routeLabel}, ${stopCount} ${stopLabel}${firstRouteId}`,
         );
       }
       queryClient.invalidateQueries({ queryKey: ['routes'] });
@@ -102,17 +102,20 @@ export function DashboardPage() {
   const completeMutation = useMutation({
     mutationFn: completeRoute,
     onSuccess: () => {
+      addLog('< [OK] Route marked complete');
       queryClient.invalidateQueries({ queryKey: ['routes'] });
       queryClient.invalidateQueries({ queryKey: ['routes', 'active'] });
-      // Refetch bins so admin sees updated fill levels after route completion
       queryClient.invalidateQueries({ queryKey: ['bins'] });
     },
-    onError: () => {},
+    onError: (err) => {
+      addLog(`< [ERR] ${(err as Error).message}`);
+    },
   });
 
   const collectBinMutation = useMutation({
     mutationFn: (binId: string) => updateBinFillLevel(binId, 0),
-    onSuccess: () => {
+    onSuccess: (_, binId) => {
+      addLog(`< [OK] Bin #${binId.slice(0, 6)} emptied to 0%`);
       queryClient.invalidateQueries({ queryKey: ['bins'] });
       queryClient.invalidateQueries({ queryKey: ['bins', 'critical'] });
     },
@@ -124,6 +127,7 @@ export function DashboardPage() {
   const deleteRouteMutation = useMutation({
     mutationFn: deleteRoute,
     onSuccess: () => {
+      addLog('< [OK] Route cleared');
       queryClient.invalidateQueries({ queryKey: ['routes'] });
       queryClient.invalidateQueries({ queryKey: ['routes', 'active'] });
     },
@@ -133,19 +137,26 @@ export function DashboardPage() {
   const simulateMutation = useMutation({
     mutationFn: simulateNextDay,
     onSuccess: () => {
+      addLog('< [SIMULATION] Advanced +24h: waste increased by 15-25% across network');
       queryClient.invalidateQueries({ queryKey: ['bins'] });
+      queryClient.invalidateQueries({ queryKey: ['bins', 'critical'] });
     },
-    onError: () => {},
+    onError: (err) => {
+      addLog(`< [ERR] ${(err as Error).message}`);
+    },
   });
 
   const resetMutation = useMutation({
     mutationFn: resetBinsToZero,
     onSuccess: () => {
+      addLog('< [RESET] All bins flushed to 0% and active routes cleared');
       queryClient.invalidateQueries({ queryKey: ['bins'] });
       queryClient.invalidateQueries({ queryKey: ['routes'] });
       queryClient.invalidateQueries({ queryKey: ['routes', 'active'] });
     },
-    onError: () => {},
+    onError: (err) => {
+      addLog(`< [ERR] ${(err as Error).message}`);
+    },
   });
 
   const bins = binsQuery.data ?? [];
@@ -163,21 +174,34 @@ export function DashboardPage() {
   };
 
   const runGenerate = () => {
-    if (!assignedVehicleId) {
-      addLog('< [ERR] select a vehicle first');
+    const vehicleId = assignedVehicleId || operatorAccounts[0]?.id;
+    if (!vehicleId) {
+      addLog('< [ERR] Select a fleet vehicle first');
       return;
     }
-    addLog('> POST /routes/generate');
-    generateMutation.mutate({ assignedCarId: assignedVehicleId });
+    addLog(`> POST /routes/generate [Vehicle: ${vehicleId.slice(0, 6)}]`);
+    generateMutation.mutate({ assignedCarId: vehicleId });
   };
 
   const runGeneratePredictive = () => {
-    if (!assignedVehicleId) {
-      addLog('< [ERR] select a vehicle first');
+    const vehicleId = assignedVehicleId || operatorAccounts[0]?.id;
+    if (!vehicleId) {
+      addLog('< [ERR] Select a fleet vehicle first');
       return;
     }
-    addLog('> POST /routes/generate-predictive');
-    generatePredictiveMutation.mutate({ assignedCarId: assignedVehicleId });
+    addLog(`> POST /routes/generate-predictive [Vehicle: ${vehicleId.slice(0, 6)}]`);
+    generatePredictiveMutation.mutate({ assignedCarId: vehicleId });
+  };
+
+  const triggerSurge = async () => {
+    addLog('> [SIMULATION] Injecting organic waste surge into 4 bins...');
+    const candidateBins = bins.slice(0, 4);
+    for (const b of candidateBins) {
+      await updateBinFillLevel(b.id, Math.floor(Math.random() * 15 + 85));
+    }
+    queryClient.invalidateQueries({ queryKey: ['bins'] });
+    queryClient.invalidateQueries({ queryKey: ['bins', 'critical'] });
+    addLog('< [OK] Surge injected: 4 bins escalated to critical fill (≥85%)');
   };
 
   if (!user) return null;
@@ -221,6 +245,8 @@ export function DashboardPage() {
       onDeleteRoute={(id) => deleteRouteMutation.mutate(id)}
       onSimulateDay={() => simulateMutation.mutateAsync()}
       onResetBins={() => resetMutation.mutateAsync()}
+      onTriggerSurge={triggerSurge}
+      onEmptyBin={(binId) => collectBinMutation.mutate(binId)}
       isPendingGenerate={generateMutation.isPending}
       isPendingPredictive={generatePredictiveMutation.isPending}
       completePending={completeMutation.isPending}

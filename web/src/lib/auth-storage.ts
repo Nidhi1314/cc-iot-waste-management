@@ -1,14 +1,16 @@
 import type { AuthUser } from '../types/api';
 
-const ACCESS_TOKEN_KEY = 'wastewise.accessToken';
-const USER_KEY = 'wastewise.user';
+const ACCESS_TOKEN_KEY = 'regenix.accessToken';
+const USER_KEY = 'regenix.user';
+const LEGACY_ACCESS_TOKEN_KEY = 'wastewise.accessToken';
+const LEGACY_USER_KEY = 'wastewise.user';
 
 export const authStorage = {
   getToken(): string | null {
-    return sessionStorage.getItem(ACCESS_TOKEN_KEY);
+    return sessionStorage.getItem(ACCESS_TOKEN_KEY) || sessionStorage.getItem(LEGACY_ACCESS_TOKEN_KEY);
   },
   getUser(): AuthUser | null {
-    const raw = sessionStorage.getItem(USER_KEY);
+    const raw = sessionStorage.getItem(USER_KEY) || sessionStorage.getItem(LEGACY_USER_KEY);
     if (!raw) return null;
     try {
       return JSON.parse(raw) as AuthUser;
@@ -23,5 +25,7 @@ export const authStorage = {
   clearSession() {
     sessionStorage.removeItem(ACCESS_TOKEN_KEY);
     sessionStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(LEGACY_ACCESS_TOKEN_KEY);
+    sessionStorage.removeItem(LEGACY_USER_KEY);
   },
 };

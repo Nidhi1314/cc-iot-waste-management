@@ -1,3 +1,4 @@
+import { Leaf } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AuthUser, RouteItem, SmartBin } from '../../../types/api';
 import {
@@ -117,8 +118,8 @@ export function DriverDashboard({
         <header className="rounded-lg border border-line bg-panel px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <span className="text-xl">🌱</span>
-              <p className="text-lg font-semibold text-main">WasteWise</p>
+              <Leaf className="h-5 w-5 text-[#2D6A4F]" />
+              <p className="text-lg font-semibold text-main">ReGenix</p>
             </div>
             <div className="flex items-center gap-3">
               <p className="text-sm font-semibold text-main">{user.userCode}</p>
@@ -348,7 +349,7 @@ function DriverActiveRoutePanel({
                             : 'bg-accent text-onAccent'
                       }`}
                     >
-                      {isDone ? '✓' : stop.step}
+                      {isDone ? 'OK' : stop.step}
                     </span>
                     <div>
                       <p className="text-sm font-semibold text-main">
@@ -742,7 +743,7 @@ function DriverPseudoMap({
                 x={point.x}
                 y={point.y}
               >
-                {isDone ? '✓' : point.step}
+                {isDone ? 'OK' : point.step}
               </text>
             </g>
           );

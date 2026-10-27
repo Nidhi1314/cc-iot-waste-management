@@ -111,7 +111,7 @@ export function RouteTab({ route, bins, progress, nextStop, completedCount, allD
                 }`}
               >
                 <span className={`w-6 shrink-0 font-bold ${isDone ? 'text-terminalAccent' : isNext ? 'text-terminalAccent' : 'text-terminalMuted'}`}>
-                  {isDone ? '✓' : String(stop.step).padStart(2, '0')}
+                  {isDone ? 'OK' : String(stop.step).padStart(2, '0')}
                 </span>
                 <span className={`flex-1 truncate px-3 ${isDone ? 'text-terminalMuted line-through' : 'text-terminalText'}`}>
                   {bin?.address ?? `Bin ${stop.binId.slice(0, 8).toUpperCase()}`}

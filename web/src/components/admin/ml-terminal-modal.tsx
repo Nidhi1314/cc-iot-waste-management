@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Terminal, CheckCircle2, AlertOctagon, X, Sparkles } from 'lucide-react';
 
 type Result = { success: boolean; message: string };
 
@@ -45,106 +46,110 @@ export function MlTerminalModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F172A]/40 backdrop-blur-sm p-4"
       onClick={(event) => {
         if (canClose && event.target === event.currentTarget) onClose();
       }}
     >
-      <div className="flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-terminalBorder bg-white px-5 py-4">
+      <div className="flex w-full max-w-2xl flex-col overflow-hidden rounded-lg border border-[#E2E8F0] bg-white shadow-lg">
+        <div className="flex items-center justify-between border-b border-[#E2E8F0] bg-[#F8FAFC] px-5 py-3.5">
           <div className="flex items-center gap-2.5">
-            <span
-              className={`h-2.5 w-2.5 rounded-full ${
-                isPending
-                  ? 'animate-pulse bg-terminalWarn'
-                  : result?.success
-                    ? 'bg-terminalAccent'
-                    : 'bg-terminalDanger'
-              }`}
-            />
-            <span className="text-sm font-bold text-terminalText">
-              Predictive route
-            </span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#F0FDF4] border border-[#DCFCE7] text-[#1B4332]">
+              <Sparkles className="h-4 w-4 text-[#2D6A4F]" />
+            </div>
+            <div>
+              <span className="text-xs font-bold uppercase tracking-wider text-[#0F172A]">
+                Random Forest ML Inference Stream
+              </span>
+              <p className="text-[10px] text-[#64748B]">24-Hour CVRP Predictive Horizon</p>
+            </div>
           </div>
           <button
-            className="rounded-full border border-terminalBorder px-3 py-1 text-xs text-terminalMuted hover:border-terminalDanger hover:text-terminalDanger disabled:cursor-not-allowed disabled:opacity-30"
+            className="rounded p-1 text-[#64748B] hover:bg-[#F1F5F9] hover:text-[#0F172A] transition disabled:opacity-30"
             disabled={!canClose}
             onClick={onClose}
             type="button"
-            title={canClose ? 'Close' : 'Wait for the API response'}
+            title={canClose ? 'Close' : 'Waiting for model response'}
           >
-            Close
+            <X className="h-5 w-5" />
           </button>
         </div>
 
         <div
           ref={bodyRef}
-          className="t-scroll h-96 overflow-auto bg-slate-50 p-5 text-sm leading-relaxed"
+          className="h-96 overflow-y-auto bg-[#0F172A] p-5 font-mono text-xs leading-relaxed text-[#94A3B8]"
         >
-          <div className="font-bold text-terminalAccent">
-            Predictive route request
+          <div className="text-[#52B788] font-bold flex items-center gap-1.5">
+            <Terminal className="h-3.5 w-3.5" />
+            <span>CONNECTED TO ML SERVICE :8000</span>
           </div>
-          <div className="text-terminalMuted">
-            Horizon: 24 hours | Input: current bin data and trained model
+          <div className="text-[#64748B] text-[11px] mt-1">
+            Model: Random Forest Regressor • Features: [bin_id_encoded, hour, is_weekend]
           </div>
-          <div className="my-2 text-terminalBorder">{'─'.repeat(54)}</div>
+          <div className="my-3 border-b border-[#334155]" />
 
           {isPending ? (
-            <>
-              <div className="font-semibold text-terminalAccent2">Request in progress</div>
-              <div className="text-terminalMuted">
-                The service is estimating future fill levels and optimizing collection stops...
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-[#52B788] font-bold">
+                <span className="h-2 w-2 rounded-full bg-[#52B788] animate-ping" />
+                <span>Simulating 24-hour fill accretion trajectory...</span>
               </div>
-              <div className="mt-1 text-terminalWarn">
-                Waiting for the API response
-                <span className="cursor-blink"> _</span>
+              <div className="text-[#94A3B8]">
+                Querying historical fill patterns & identifying bins exceeding 75% capacity...
               </div>
-            </>
+              <div className="text-[#FBBF24] flex items-center gap-1.5">
+                <span>Executing OR-Tools CVRP solver</span>
+                <span className="cursor-blink font-bold">_</span>
+              </div>
+            </div>
           ) : result ? (
-            <div className="mt-1">
+            <div className="mt-2 space-y-2">
               {result.success ? (
                 <>
-                  <div className="font-bold text-terminalAccent">
-                    Request complete
+                  <div className="flex items-center gap-2 text-[#52B788] font-bold">
+                    <CheckCircle2 className="h-4 w-4" />
+                    <span>Inference & CVRP Routing Solved Successfully</span>
                   </div>
-                  <div className="mt-0.5 break-all text-terminalMuted">
+                  <div className="rounded-md border border-[#2D6A4F]/40 bg-[#143527] p-3 text-[#E2E8F0]">
                     {result.message}
                   </div>
-                  <div className="mt-1 text-terminalMuted">
-                    Values above are from the completed request.
+                  <div className="text-[#64748B] text-[11px]">
+                    Route waypoints committed to PostgreSQL database and active on surveillance map.
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="font-bold text-terminalDanger">
-                    Request failed
+                  <div className="flex items-center gap-2 text-[#F87171] font-bold">
+                    <AlertOctagon className="h-4 w-4" />
+                    <span>Prediction Engine Raised Exception</span>
                   </div>
-                  <div className="mt-0.5 break-all text-terminalDanger">
+                  <div className="rounded-md border border-[#DC2626]/40 bg-[#450A0A] p-3 text-[#FCA5A5]">
                     {result.message}
                   </div>
                 </>
               )}
             </div>
           ) : (
-            <div className="text-terminalWarn">
-              Waiting for the request result...
-            </div>
+            <div className="text-[#FBBF24]">Awaiting inference cycle...</div>
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-terminalBorder bg-white px-5 py-3 text-xs text-terminalMuted">
-          <span>
+        <div className="flex items-center justify-between border-t border-[#E2E8F0] bg-[#F8FAFC] px-5 py-3 text-xs text-[#475569]">
+          <span className="font-mono text-[11px]">
             {isPending
-              ? 'request in progress...'
+              ? 'STATUS: COMPUTING MATRIX...'
               : result?.success
-                ? 'completed successfully'
-                : result
-                  ? 'completed with error'
-                  : 'waiting for response...'}
+              ? 'STATUS: OPTIMIZED'
+              : 'STATUS: IDLE'}
           </span>
-          <span className={canClose ? 'text-terminalAccent' : 'opacity-40'}>
-            {canClose             ? 'Ready to close' : 'processing...'}
-          </span>
+          <button
+            onClick={onClose}
+            disabled={!canClose}
+            className="rounded-md bg-[#1B4332] px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-[#143527] transition disabled:opacity-40"
+            type="button"
+          >
+            {canClose ? 'Dismiss Terminal' : 'Processing...'}
+          </button>
         </div>
       </div>
     </div>

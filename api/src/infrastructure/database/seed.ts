@@ -36,19 +36,19 @@ async function seed() {
       userCode: 'ADMIN-01',
       password: hashedPassword,
       role: 'ADMIN',
-      maxCapacityKg: 0,
+      maxCapacityKg: 2000,
     },
     {
       userCode: 'DRIVER-01',
       password: hashedPassword,
       role: 'DRIVER',
-      maxCapacityKg: 400,
+      maxCapacityKg: 2500,
     },
     {
       userCode: 'DRIVER-02',
       password: hashedPassword,
       role: 'DRIVER',
-      maxCapacityKg: 400,
+      maxCapacityKg: 3200,
     },
   ]);
   console.log('✅ Vehicles seeded.');

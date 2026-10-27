@@ -1,4 +1,11 @@
 import { useState } from 'react';
+import {
+  Sparkles,
+  Truck,
+  CheckCircle2,
+  Trash2,
+  Navigation,
+} from 'lucide-react';
 import type { RouteItem, VehiclePublic, SmartBin } from '../../types/api';
 import { formatDateTime } from '../../lib/utils';
 import { MlTerminalModal } from './ml-terminal-modal';
@@ -41,177 +48,239 @@ export function RoutesTab({
   const [mlModalOpen, setMlModalOpen] = useState(false);
   const [mlLogStartIndex, setMlLogStartIndex] = useState(0);
 
-  const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? null;
+  const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? routes[0] ?? null;
   const binsById = new Map(bins.map((b) => [b.id, b]));
-  const driverOptions = operatorAccounts.filter((o) => o.role === 'DRIVER');
   const isAnyPending = isPending || isPredictivePending || completePending || deletePending;
 
   return (
-    <div className="flex h-[calc(100vh-56px)] flex-col gap-4 overflow-auto p-5">
-      {/* Generate card */}
-      <div className="rounded-2xl border border-terminalBorder bg-terminalPanel shadow-sm">
-        <div className="t-panel-header">Generate a route</div>
-        <div className="p-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-terminalMuted">Assign vehicle</label>
-              <div className="relative">
-                <select
-                  className="appearance-none rounded-xl border border-terminalBorder bg-white px-3 py-2 pr-8 text-sm text-terminalText focus:border-terminalAccent focus:outline-none disabled:opacity-50"
-                  value={assignedVehicleId}
-                  onChange={(e) => onChangeAssignedVehicle(e.target.value)}
-                  disabled={isAnyPending}
-                >
-                  <option value="">-- select driver --</option>
-                  {driverOptions.map((d) => (
-                    <option key={d.id} value={d.id}>{d.userCode} ({d.maxCapacityKg}kg)</option>
-                  ))}
-                </select>
-                <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-terminalMuted">▾</span>
-              </div>
-            </div>
+    <div className="flex h-full flex-col gap-5 overflow-auto p-6 max-w-7xl mx-auto bg-[#F8FAF6] text-[#0F172A]">
+      {/* Route Generator Console Card */}
+      <div className="rounded-lg border border-[#E2E8F0] bg-white p-5 shadow-sm">
+        <div className="flex items-center gap-2.5 border-b border-[#E2E8F0] pb-3 mb-4">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[#F0FDF4] border border-[#DCFCE7] text-[#1B4332]">
+            <Navigation className="h-4 w-4 text-[#2D6A4F]" />
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-[#0F172A] uppercase tracking-wider">
+              CVRP Heuristic Dispatcher
+            </h2>
+            <p className="text-xs text-[#475569]">
+              Operations Research capacity-constrained routing engine
+            </p>
+          </div>
+        </div>
 
-            <button
-              className="rounded-full border border-terminalAccent bg-terminalAccent px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={isAnyPending || !assignedVehicleId}
-              onClick={onGenerate}
-              type="button"
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-bold uppercase tracking-wider text-[#475569] flex items-center gap-1.5">
+              <Truck className="h-3.5 w-3.5 text-[#2D6A4F]" />
+              <span>Assigned Fleet Vehicle</span>
+            </label>
+            <select
+              className="rounded-md border border-[#CBD5E1] bg-white px-3 py-1.5 text-xs font-medium text-[#0F172A] focus:border-[#2D6A4F] focus:outline-none disabled:opacity-50"
+              value={assignedVehicleId}
+              onChange={(e) => onChangeAssignedVehicle(e.target.value)}
+              disabled={isAnyPending}
             >
-              {isPending ? 'Generating...' : 'Generate route'}
-            </button>
-
-            <button
-              className="rounded-full border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-800 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
-              disabled={isAnyPending || !assignedVehicleId}
-              onClick={() => {
-                setMlLogStartIndex(actionLog.length);
-                setMlModalOpen(true);
-                onGeneratePredictive();
-              }}
-              type="button"
-            >
-              {isPredictivePending ? 'Generating...' : 'Predict 24-hour route'}
-            </button>
+              <option value="">-- Choose Operator Vehicle --</option>
+              {operatorAccounts.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.userCode} ({d.maxCapacityKg} kg payload) [{d.role}]
+                </option>
+              ))}
+            </select>
           </div>
 
-          {actionLog.length > 0 && (
-            <div className="t-scroll mt-3 max-h-20 overflow-auto rounded border border-terminalBorder bg-terminal p-2 text-[11px] text-terminalMuted">
-              {actionLog.map((line, i) => <div key={i}>{line}</div>)}
-            </div>
-          )}
+          <button
+            className="flex items-center gap-2 rounded-md bg-[#1B4332] px-4 py-2 text-xs font-semibold text-white hover:bg-[#143527] disabled:cursor-not-allowed disabled:opacity-40 transition shadow-sm"
+            disabled={isAnyPending || !assignedVehicleId}
+            onClick={onGenerate}
+            type="button"
+          >
+            <Navigation className="h-3.5 w-3.5" />
+            <span>{isPending ? 'Calculating CVRP...' : 'Solve Heuristic Route'}</span>
+          </button>
+
+          <button
+            className="flex items-center gap-2 rounded-md border border-[#2D6A4F] bg-[#F0FDF4] px-4 py-2 text-xs font-semibold text-[#1B4332] hover:bg-[#DCFCE7] disabled:cursor-not-allowed disabled:opacity-40 transition"
+            disabled={isAnyPending || !assignedVehicleId}
+            onClick={() => {
+              setMlLogStartIndex(actionLog.length);
+              setMlModalOpen(true);
+              onGeneratePredictive();
+            }}
+            type="button"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-[#2D6A4F]" />
+            <span>{isPredictivePending ? 'Predicting ML Trend...' : 'Predictive 24h Route (ML)'}</span>
+          </button>
         </div>
+
+        {actionLog.length > 0 && (
+          <div className="mt-4 max-h-24 overflow-y-auto rounded-md border border-[#E2E8F0] bg-[#F8FAFC] p-3 font-mono text-[11px] text-[#475569] space-y-1">
+            {actionLog.slice(-6).map((line, i) => (
+              <div key={i} className={line.includes('[ERR]') ? 'text-[#DC2626] font-semibold' : 'text-[#0F172A]'}>
+                {line}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Route list + detail */}
-      <div className="grid flex-1 gap-4 lg:grid-cols-[1fr_1.4fr]">
-        <div className="rounded-2xl border border-terminalBorder bg-terminalPanel shadow-sm">
-          <div className="t-panel-header flex items-center justify-between">
-            <span>Routes</span>
-            <span className="text-terminalMuted">{routes.length} records</span>
+      {/* Route List + Selected Details Split View */}
+      <div className="grid flex-1 gap-5 lg:grid-cols-[1fr_1.3fr] min-h-[380px]">
+        {/* Dispatched Routes List */}
+        <div className="rounded-lg border border-[#E2E8F0] bg-white p-4 shadow-sm flex flex-col">
+          <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2.5 mb-3">
+            <span className="font-bold text-xs uppercase tracking-wider text-[#0F172A]">Dispatched Routes</span>
+            <span className="text-xs text-[#64748B]">{routes.length} total</span>
           </div>
-          <div className="t-scroll max-h-[calc(100vh-360px)] overflow-auto">
+
+          <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[420px]">
             {routes.length === 0 ? (
-              <div className="p-4 text-sm text-terminalMuted">No routes yet. Generate one above.</div>
+              <div className="p-8 text-center text-xs text-[#64748B]">
+                No routes dispatched. Run solver above.
+              </div>
             ) : (
               routes.map((route) => (
                 <button
                   key={route.id}
-                  className={`w-full border-b border-terminalBorder/50 p-3 text-left text-xs transition-colors hover:bg-terminalPanel2 ${
-                    selectedRouteId === route.id ? 'bg-blue-50' : ''
+                  className={`w-full rounded-md border p-3 text-left text-xs transition ${
+                    selectedRoute?.id === route.id
+                      ? 'border-[#2D6A4F] bg-[#F0FDF4]'
+                      : 'border-[#E2E8F0] bg-[#F8FAFC] hover:bg-white'
                   }`}
                   onClick={() => setSelectedRouteId(route.id)}
                   type="button"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-semibold text-terminalText">RTE_{route.id.slice(0, 8).toUpperCase()}</span>
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                      route.isCompleted
-                        ? 'bg-slate-100 text-slate-700'
-                        : 'bg-terminalAccent text-white'
-                    }`}>
-                      {route.isCompleted ? 'Done' : 'Active'}
+                    <span className="font-mono font-bold text-[#1B4332]">
+                      RTE_{route.id.slice(0, 8).toUpperCase()}
+                    </span>
+                    <span
+                      className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${
+                        route.isCompleted
+                          ? 'bg-[#F1F5F9] text-[#64748B] border-[#E2E8F0]'
+                          : 'bg-[#DCFCE7] text-[#166534] border-[#BBF7D0]'
+                      }`}
+                    >
+                      {route.isCompleted ? 'COMPLETED' : 'IN TRANSIT'}
                     </span>
                   </div>
-                  <p className="mt-1 text-terminalMuted">stops: {route.waypointsOrder.length} | {formatDateTime(route.createdAt)}</p>
+                  <div className="mt-1.5 flex items-center justify-between text-[11px] text-[#475569]">
+                    <span>{route.waypointsOrder.length} stops</span>
+                    <span>{formatDateTime(route.createdAt)}</span>
+                  </div>
                 </button>
               ))
             )}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-terminalBorder bg-terminalPanel shadow-sm">
-          <div className="t-panel-header">Route details</div>
-          {!selectedRoute ? (
-            <div className="p-4 text-sm text-terminalMuted">Select a route to see its details.</div>
-          ) : (
-            <div className="t-scroll max-h-[calc(100vh-360px)] overflow-auto p-4 text-xs">
-              <div className="space-y-1.5 text-terminalMuted">
-                <p><span className="text-terminalAccent">ID: </span><span className="font-mono text-terminalText">{selectedRoute.id}</span></p>
-                <p><span className="text-terminalAccent">Created: </span><span className="font-mono text-terminalText">{formatDateTime(selectedRoute.createdAt)}</span></p>
-                <p><span className="text-terminalAccent">Status: </span>
-                  <span className={selectedRoute.isCompleted ? 'text-terminalAccent' : 'text-terminalWarn'}>
-                    [{selectedRoute.isCompleted ? 'COMPLETED' : 'ACTIVE'}]
-                  </span>
-                </p>
-                <p><span className="text-terminalAccent">Distance: </span><span className="text-terminalText">{selectedRoute.totalDistanceKm != null ? `${selectedRoute.totalDistanceKm.toFixed(2)} km` : 'N/A'}</span></p>
-                <p><span className="text-terminalAccent">Stops: </span><span className="text-terminalText">{selectedRoute.waypointsOrder.length}</span></p>
-              </div>
+        {/* Selected Route Inspection Panel */}
+        <div className="rounded-lg border border-[#E2E8F0] bg-white p-4 shadow-sm flex flex-col">
+          <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2.5 mb-3">
+            <span className="font-bold text-xs uppercase tracking-wider text-[#0F172A]">Waypoint Manifest</span>
+            {selectedRoute && (
+              <span className="text-xs font-semibold text-[#1B4332]">
+                {selectedRoute.waypointsOrder.length} stops scheduled
+              </span>
+            )}
+          </div>
 
-              <div className="mt-4">
-                <p className="text-xs font-semibold text-terminalMuted">Stop order</p>
-                <div className="mt-2 space-y-1 rounded border border-terminalBorder bg-terminal p-2">
-                  {[...selectedRoute.waypointsOrder].sort((a, b) => a.step - b.step).map((wp) => {
-                    const bin = binsById.get(wp.binId);
-                    return (
-                      <div key={`${selectedRoute.id}-${wp.step}`} className="flex justify-between text-[11px]">
-                        <span className="text-terminalAccent">{String(wp.step).padStart(2, '0')}.</span>
-                        <span className="flex-1 px-2 truncate text-terminalText">{bin?.address ?? wp.binId.slice(0, 12)}</span>
-                        <span className="text-terminalMuted shrink-0">{wp.collectedKg}kg</span>
-                      </div>
-                    );
-                  })}
+          {!selectedRoute ? (
+            <div className="flex-1 flex items-center justify-center text-xs text-[#64748B]">
+              Select a route from the list to inspect stops.
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col justify-between">
+              <div className="space-y-3.5">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-md bg-[#F8FAFC] p-2.5 border border-[#E2E8F0]">
+                    <span className="text-[10px] font-semibold text-[#64748B] uppercase">Route UUID</span>
+                    <p className="font-mono font-bold text-[#0F172A] truncate">{selectedRoute.id}</p>
+                  </div>
+                  <div className="rounded-md bg-[#F8FAFC] p-2.5 border border-[#E2E8F0]">
+                    <span className="text-[10px] font-semibold text-[#64748B] uppercase">Distance Estimate</span>
+                    <p className="font-bold text-[#1B4332]">
+                      {selectedRoute.totalDistanceKm != null ? `${selectedRoute.totalDistanceKm.toFixed(2)} km` : 'Pending OSRM'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Stop Order Sequence */}
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#475569] mb-1.5">Sequential Waypoint Sequence</p>
+                  <div className="max-h-48 overflow-y-auto space-y-1.5 rounded-md border border-[#E2E8F0] bg-[#F8FAFC] p-2 text-xs">
+                    {[...selectedRoute.waypointsOrder]
+                      .sort((a, b) => a.step - b.step)
+                      .map((wp) => {
+                        const bin = binsById.get(wp.binId);
+                        return (
+                          <div
+                            key={`${selectedRoute.id}-${wp.step}`}
+                            className="flex items-center justify-between rounded bg-white border border-[#E2E8F0] px-3 py-1.5"
+                          >
+                            <span className="text-[#1B4332] font-bold w-6">#{wp.step}</span>
+                            <span className="flex-1 px-2 truncate text-[#0F172A] font-medium">
+                              {bin?.address ?? wp.binId.slice(0, 12)}
+                            </span>
+                            <span className="text-[#2D6A4F] font-bold shrink-0">
+                              {wp.collectedKg} kg
+                            </span>
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              {/* Action buttons */}
+              <div className="mt-4 flex flex-wrap gap-2 pt-3 border-t border-[#E2E8F0]">
                 {!selectedRoute.isCompleted && (
                   <button
-                    className="rounded-full border border-terminalAccent bg-terminalAccent px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-40"
+                    className="flex items-center gap-1.5 rounded-md bg-[#F0FDF4] border border-[#DCFCE7] px-3.5 py-1.5 text-xs font-semibold text-[#166534] hover:bg-[#DCFCE7] transition disabled:opacity-40"
                     disabled={completePending || deletePending}
                     onClick={() => onCompleteRoute(selectedRoute.id)}
                     type="button"
                   >
-                    {completePending ? 'Completing...' : 'Mark complete'}
+                    <CheckCircle2 className="h-3.5 w-3.5 text-[#2D6A4F]" />
+                    <span>{completePending ? 'Completing...' : 'Mark Route Complete'}</span>
                   </button>
                 )}
 
                 {confirmDeleteId === selectedRoute.id ? (
-                  <div className="flex items-center gap-2 rounded border border-terminalDanger bg-terminalDanger/10 px-3 py-1.5">
-                    <span className="text-xs font-medium text-terminalDanger">Delete this route?</span>
+                  <div className="flex items-center gap-2 rounded-md border border-[#FEE2E2] bg-[#FEF2F2] px-3 py-1 text-xs">
+                    <span className="font-semibold text-[#DC2626]">Confirm deletion?</span>
                     <button
-                      className="rounded-lg border border-terminalDanger px-2 py-0.5 text-xs font-bold text-terminalDanger hover:bg-terminalDanger/20 disabled:opacity-40"
+                      className="rounded bg-[#DC2626] px-2 py-0.5 text-xs font-bold text-white hover:bg-[#B91C1C] transition"
                       disabled={deletePending}
-                      onClick={() => { onDeleteRoute(selectedRoute.id); setConfirmDeleteId(null); setSelectedRouteId(null); }}
+                      onClick={() => {
+                        onDeleteRoute(selectedRoute.id);
+                        setConfirmDeleteId(null);
+                        setSelectedRouteId(null);
+                      }}
                       type="button"
                     >
-                      Yes
+                      Delete
                     </button>
                     <button
-                      className="rounded-lg border border-terminalBorder px-2 py-0.5 text-xs text-terminalMuted hover:text-terminalText"
+                      className="rounded border border-[#CBD5E1] bg-white px-2 py-0.5 text-xs text-[#475569] hover:text-[#0F172A]"
                       onClick={() => setConfirmDeleteId(null)}
                       type="button"
                     >
-                      No
+                      Cancel
                     </button>
                   </div>
                 ) : (
                   <button
-                    className="rounded-lg border border-terminalDanger bg-terminalDanger/5 px-3 py-1.5 text-xs font-bold text-terminalDanger hover:bg-terminalDanger/20 disabled:opacity-40"
+                    className="flex items-center gap-1.5 rounded-md border border-[#FEE2E2] bg-[#FEF2F2] px-3 py-1.5 text-xs font-semibold text-[#DC2626] hover:bg-[#FEE2E2] transition disabled:opacity-40"
                     disabled={completePending || deletePending}
                     onClick={() => setConfirmDeleteId(selectedRoute.id)}
                     type="button"
                   >
-                    Delete
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span>Delete</span>
                   </button>
                 )}
               </div>

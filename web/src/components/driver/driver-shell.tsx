@@ -1,4 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Navigation,
+  Map as MapIcon,
+  FileText,
+  User as UserIcon,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Leaf,
+} from 'lucide-react';
 import type { AuthUser, RouteItem, RouteWaypoint, SmartBin } from '../../types/api';
 import { RouteTab } from './route-tab';
 import { DriverMapTab } from './map-tab';
@@ -24,11 +34,11 @@ type DriverShellProps = {
 
 type AllProgress = Record<string, Record<string, boolean>>;
 
-const NAV_ITEMS: { id: DriverTab; icon: string; label: string }[] = [
-  { id: 'route',   icon: '↗', label: 'Route' },
-  { id: 'map',     icon: '◈', label: 'Map' },
-  { id: 'summary', icon: '≡', label: 'Summary' },
-  { id: 'account', icon: '○', label: 'Account' },
+const NAV_ITEMS: { id: DriverTab; icon: React.ComponentType<{ className?: string }>; label: string }[] = [
+  { id: 'route',   icon: Navigation, label: 'Route' },
+  { id: 'map',     icon: MapIcon,    label: 'Map' },
+  { id: 'summary', icon: FileText,   label: 'Summary' },
+  { id: 'account', icon: UserIcon,   label: 'Account' },
 ];
 
 function getKey(step: number, binId: string) {
@@ -37,7 +47,7 @@ function getKey(step: number, binId: string) {
 
 function loadProgress(): AllProgress {
   try {
-    const raw = localStorage.getItem('ww_driver_progress');
+    const raw = localStorage.getItem('regenix_driver_progress') || localStorage.getItem('ww_driver_progress');
     return raw ? JSON.parse(raw) : {};
   } catch { return {}; }
 }
@@ -55,7 +65,7 @@ export function DriverShell({
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    localStorage.setItem('ww_driver_progress', JSON.stringify(allProgress));
+    localStorage.setItem('regenix_driver_progress', JSON.stringify(allProgress));
   }, [allProgress]);
 
   const activeRoute = useMemo(() => {
@@ -110,46 +120,52 @@ export function DriverShell({
   const hasError = binsError || routesError;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-terminal" style={{ background: 'var(--t-bg)', color: 'var(--t-text)' }}>
-      {/* Sidebar — same structure as AdminShell */}
+    <div className="flex h-screen overflow-hidden bg-[#F8FAF6] text-[#0F172A]">
+      {/* Sidebar */}
       <aside
-        className="flex shrink-0 flex-col border-r border-terminalBorder bg-terminalPanel transition-all duration-200"
-        style={{ width: sidebarExpanded ? '200px' : '52px' }}
+        className="flex shrink-0 flex-col border-r border-[#E2E8F0] bg-white transition-all duration-200"
+        style={{ width: sidebarExpanded ? '200px' : '56px' }}
       >
         {/* Logo */}
-        <div className="flex items-center justify-between border-b border-terminalBorder px-3 py-3.5">
-          {sidebarExpanded && (
-            <span className="text-sm font-extrabold tracking-tight text-terminalAccent">WW <span className="text-terminalText">WasteWise</span></span>
+        <div className="flex items-center justify-between border-b border-[#E2E8F0] px-3.5 py-3.5">
+          {sidebarExpanded ? (
+            <div className="flex items-center gap-2">
+              <Leaf className="h-4 w-4 text-[#2D6A4F]" />
+              <span className="text-sm font-bold tracking-tight text-[#1B4332]">Re<span className="text-[#2D6A4F]">Genix</span></span>
+            </div>
+          ) : (
+            <Leaf className="mx-auto h-4 w-4 text-[#2D6A4F]" />
           )}
           <button
-            className="ml-auto rounded p-1 text-terminalMuted hover:text-terminalAccent"
+            className="ml-auto rounded p-1 text-[#64748B] hover:text-[#0F172A]"
             onClick={() => setSidebarExpanded((v) => !v)}
             type="button"
             title="Toggle sidebar"
           >
-            {sidebarExpanded ? '◂' : '▸'}
+            {sidebarExpanded ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </button>
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-2">
+        <nav className="flex-1 py-2 space-y-1 px-2">
           {NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
-                className={`mx-2 flex w-[calc(100%-1rem)] items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition-colors ${
+                className={`flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-xs font-semibold transition ${
                   isActive
-                    ? 'bg-terminalAccent text-white shadow-sm'
-                    : 'text-terminalMuted hover:bg-terminalPanel2 hover:text-terminalText'
+                    ? 'bg-[#1B4332] text-white shadow-sm'
+                    : 'text-[#475569] hover:bg-[#F1F5F9] hover:text-[#0F172A]'
                 }`}
                 onClick={() => setActiveTab(item.id)}
                 type="button"
                 title={item.label}
               >
-                <span className="w-4 shrink-0 text-center text-sm">{item.icon}</span>
+                <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-[#52B788]' : 'text-[#64748B]'}`} />
                 {sidebarExpanded && (
-                  <span className="truncate text-xs font-semibold">{item.label}</span>
+                  <span className="truncate">{item.label}</span>
                 )}
               </button>
             );
@@ -157,20 +173,20 @@ export function DriverShell({
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-terminalBorder p-3">
+        <div className="border-t border-[#E2E8F0] p-3">
           {sidebarExpanded && (
-            <p className="mb-2 truncate text-[10px] text-terminalMuted">
+            <p className="mb-2 truncate text-[11px] text-[#64748B]">
               {user.userCode} [{user.role}]
             </p>
           )}
           <button
-            className="flex w-full items-center gap-2 rounded-xl border border-terminalBorder px-3 py-2 text-xs font-medium text-terminalMuted hover:border-terminalDanger hover:bg-red-50 hover:text-terminalDanger"
+            className="flex w-full items-center gap-2 rounded-md border border-[#E2E8F0] px-3 py-1.5 text-xs font-medium text-[#475569] hover:border-[#FCA5A5] hover:bg-[#FEF2F2] hover:text-[#DC2626] transition"
             onClick={onLogout}
             type="button"
             title="Logout"
           >
-            <span>⏻</span>
-            {sidebarExpanded && <span>Logout</span>}
+            <LogOut className="h-3.5 w-3.5" />
+            {sidebarExpanded && <span>Sign Out</span>}
           </button>
         </div>
       </aside>
@@ -178,37 +194,34 @@ export function DriverShell({
       {/* Main */}
       <main className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex items-center justify-between border-b border-terminalBorder bg-terminalPanel px-5 py-3 text-xs text-terminalMuted">
+        <div className="flex items-center justify-between border-b border-[#E2E8F0] bg-white px-5 py-3 text-xs text-[#475569]">
           <span>
-            <span className="font-semibold text-terminalText">WasteWise</span>
-            <span className="px-2 text-slate-300">/</span>
+            <span className="font-semibold text-[#0F172A]">ReGenix</span>
+            <span className="px-2 text-[#CBD5E1]">/</span>
             <span className="capitalize">{activeTab}</span>
           </span>
           <div className="flex flex-wrap items-center gap-3 text-xs">
             {activeRoute ? (
               <>
-                <span>Route <span className="font-mono text-terminalText">{activeRoute.id.slice(0, 8).toUpperCase()}</span></span>
-                <span>Stops <span className="text-terminalText">{completedCount}/{orderedStops.length}</span></span>
-                <span className={activeRoute.isCompleted ? 'rounded-full bg-emerald-100 px-2.5 py-1 font-semibold text-emerald-800' : 'rounded-full bg-blue-100 px-2.5 py-1 font-semibold text-blue-800'}>
+                <span>Route <span className="font-mono font-semibold text-[#0F172A]">{activeRoute.id.slice(0, 8).toUpperCase()}</span></span>
+                <span>Stops <span className="font-semibold text-[#0F172A]">{completedCount}/{orderedStops.length}</span></span>
+                <span className={activeRoute.isCompleted ? 'rounded bg-[#F0FDF4] px-2 py-0.5 font-semibold text-[#166534]' : 'rounded bg-[#F1F5F9] px-2 py-0.5 font-semibold text-[#1B4332]'}>
                   {activeRoute.isCompleted ? 'Done' : 'Active'}
                 </span>
               </>
             ) : (
-              <span className="text-terminalMuted">No active route</span>
+              <span className="text-[#94A3B8]">No active route</span>
             )}
             {routes.length > 1 && (
-              <div className="relative">
-                <select
-                  className="appearance-none rounded-xl border border-terminalBorder bg-white px-3 py-1.5 pr-6 text-xs text-terminalText focus:border-terminalAccent focus:outline-none"
-                  value={selectedRouteId ?? ''}
-                  onChange={(e) => setSelectedRouteId(e.target.value || null)}
-                >
-                  {routes.map((r) => (
-                    <option key={r.id} value={r.id}>RTE_{r.id.slice(0, 8).toUpperCase()}</option>
-                  ))}
-                </select>
-                <span className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-terminalMuted">▾</span>
-              </div>
+              <select
+                className="rounded-md border border-[#CBD5E1] bg-white px-2.5 py-1 text-xs text-[#0F172A] focus:border-[#2D6A4F] focus:outline-none"
+                value={selectedRouteId ?? ''}
+                onChange={(e) => setSelectedRouteId(e.target.value || null)}
+              >
+                {routes.map((r) => (
+                  <option key={r.id} value={r.id}>RTE_{r.id.slice(0, 8).toUpperCase()}</option>
+                ))}
+              </select>
             )}
           </div>
         </div>
