@@ -7,8 +7,6 @@ import {
   Leaf,
   Filter,
   ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
   Edit2,
 } from 'lucide-react';
 import type { SmartBin } from '../../types/api';

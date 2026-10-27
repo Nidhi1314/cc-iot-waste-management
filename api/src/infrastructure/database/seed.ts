@@ -70,9 +70,9 @@ async function seed() {
 
   if (existingSettings.length === 0) {
     await db.insert(systemSettings).values({
+      id: 1,
       fillThreshold: 75,
       maxWasteAgeHours: 48,
-      feedContaminationMaxPct: 10,
     });
     console.log('Default system settings initialized.');
   } else {
