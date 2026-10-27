@@ -22,6 +22,34 @@
       "when": 1774345653646,
       "tag": "0002_clammy_plazm",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793106515709,
+      "tag": "0003_eminent_havok",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793107934434,
+      "tag": "0004_sweet_moonstone",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793109718891,
+      "tag": "0005_odd_infant_terrible",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793112574676,
+      "tag": "0006_aberrant_steel_serpent",
+      "breakpoints": true
     }
   ]
 }

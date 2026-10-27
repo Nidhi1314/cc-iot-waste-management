@@ -12,6 +12,9 @@ import {
   Leaf,
   MapPin,
   Calendar,
+  Warehouse,
+  ArrowLeftRight,
+  Settings,
 } from 'lucide-react';
 import type { AuthUser, SmartBin, RouteItem, VehiclePublic } from '../../types/api';
 import { OverviewTab } from './overview-tab';
@@ -21,11 +24,54 @@ import { RoutesTab } from './routes-tab';
 import { OperatorsTab } from './operators-tab';
 import { SimulationTab } from './simulation-tab';
 import { LoadingState, ErrorState } from '../shared/states';
+import type { GeneratorPayload } from '../../features/bins/api';
+import { SettingsTab } from './settings-tab';
+import { DestinationsTab } from './destinations-tab';
+import { OperationsTab } from './operations-tab';
+import type { Destination } from '../../features/destinations/api';
+import type {
+  CollectionPayload,
+  CollectionRecord,
+  ImpactSummary,
+} from '../../features/collections/api';
 
-type AdminTab = 'map' | 'overview' | 'bins' | 'routes' | 'operators' | 'simulation';
+import type {
+  SystemSettings,
+  UpdateSettingsRequest,
+} from '../../features/settings/api';
+
+type AdminTab =
+  | 'overview'
+  | 'map'
+  | 'bins'
+  | 'destinations'
+  | 'routes'
+  | 'operations'
+  | 'operators'
+  | 'simulation'
+  | 'settings';
 
 type AdminShellProps = {
+
+onCreateGenerator: (
+  data: GeneratorPayload,
+) => Promise<void>;
+
+onUpdateGenerator: (
+  id: string,
+  data: GeneratorPayload,
+) => Promise<void>;
+
+isSavingGenerator: boolean;
+
   user: AuthUser;
+  settings: SystemSettings | null;
+  settingsLoading: boolean;
+  settingsError: string | null;
+  onSaveSettings: (
+    data: UpdateSettingsRequest,
+  ) => Promise<void>;
+  isSavingSettings: boolean;
   bins: SmartBin[];
   binsLoading: boolean;
   binsError: string | null;
@@ -40,6 +86,7 @@ type AdminShellProps = {
   onChangeAssignedVehicle: (id: string) => void;
   onGenerate: () => void;
   onGeneratePredictive: () => void;
+  onGenerateOrganic: () => void;
   onCompleteRoute: (id: string) => void;
   onDeleteRoute: (id: string) => void;
   onSimulateDay: () => Promise<any>;
@@ -48,21 +95,32 @@ type AdminShellProps = {
   onEmptyBin?: (binId: string) => void;
   isPendingGenerate: boolean;
   isPendingPredictive: boolean;
+  isPendingOrganic: boolean;
   completePending: boolean;
   deletePending: boolean;
   isPendingSimulate: boolean;
   isPendingReset: boolean;
   actionLog: string[];
+  destinations: Destination[];
+  collections: CollectionRecord[];
+  impact: ImpactSummary | null;
+  operationsError: string | null;
+  onCreateCollection: (payload: CollectionPayload) => Promise<void>;
+  onConfirmDelivery: (id: string) => Promise<void>;
+  isSavingCollection: boolean;
   onLogout: () => void;
 };
 
 const NAV_ITEMS: { id: AdminTab; icon: React.ComponentType<{ className?: string }>; label: string }[] = [
-  { id: 'map',         icon: MapIcon,         label: 'Surveillance' },
-  { id: 'overview',    icon: LayoutDashboard, label: 'Overview' },
-  { id: 'bins',        icon: Trash2,          label: 'Smart Bins' },
-  { id: 'routes',      icon: RouteIcon,       label: 'Dispatched Routes' },
-  { id: 'operators',   icon: Users,           label: 'Fleet Operators' },
-  { id: 'simulation',  icon: Sliders,         label: 'Simulation Engine' },
+  { id: 'map', icon: MapIcon, label: 'Surveillance' },
+  { id: 'overview', icon: LayoutDashboard, label: 'Overview' },
+  { id: 'bins', icon: Trash2, label: 'Generators' },
+  { id: 'destinations', icon: Warehouse, label: 'Destinations' },
+  { id: 'routes', icon: RouteIcon, label: 'Routes' },
+  { id: 'operations', icon: ArrowLeftRight, label: 'Collections & Impact' },
+  { id: 'operators', icon: Users, label: 'Fleet Operators' },
+  { id: 'simulation', icon: Sliders, label: 'Simulation' },
+  { id: 'settings', icon: Settings, label: 'Settings' },
 ];
 
 export function AdminShell(props: AdminShellProps) {
@@ -272,9 +330,20 @@ export function AdminShell(props: AdminShellProps) {
             ) : props.binsError ? (
               <div className="p-6"><ErrorState title="FAILED_TO_LOAD_BINS" description={props.binsError} /></div>
             ) : (
-              <BinsTab bins={props.bins} />
+
+<BinsTab
+  bins={props.bins}
+  onCreate={props.onCreateGenerator}
+  onUpdate={props.onUpdateGenerator}
+  isSaving={props.isSavingGenerator}
+/>
+
             )
           )}
+
+{activeTab === 'destinations' && (
+  <DestinationsTab />
+)}
 
           {activeTab === 'routes' && (
             props.routesLoading ? (
@@ -290,15 +359,31 @@ export function AdminShell(props: AdminShellProps) {
                 onChangeAssignedVehicle={props.onChangeAssignedVehicle}
                 onGenerate={props.onGenerate}
                 onGeneratePredictive={props.onGeneratePredictive}
+                onGenerateOrganic={props.onGenerateOrganic}
                 onCompleteRoute={props.onCompleteRoute}
                 onDeleteRoute={props.onDeleteRoute}
                 isPending={props.isPendingGenerate}
                 isPredictivePending={props.isPendingPredictive}
+                isOrganicPending={props.isPendingOrganic}
                 completePending={props.completePending}
                 deletePending={props.deletePending}
                 actionLog={props.actionLog}
               />
             )
+          )}
+
+          {activeTab === 'operations' && (
+            <OperationsTab
+              bins={props.bins}
+              routes={props.routes}
+              destinations={props.destinations}
+              collections={props.collections}
+              impact={props.impact}
+              onCreateCollection={props.onCreateCollection}
+              onConfirmDelivery={props.onConfirmDelivery}
+              saving={props.isSavingCollection}
+              error={props.operationsError}
+            />
           )}
 
           {activeTab === 'operators' && (
@@ -316,6 +401,32 @@ export function AdminShell(props: AdminShellProps) {
               isPendingSimulate={props.isPendingSimulate}
               isPendingReset={props.isPendingReset}
             />
+          )}
+
+{activeTab === 'settings' && (
+            props.settingsLoading ? (
+              <div className="p-6">
+                <LoadingState title="LOADING_SETTINGS" />
+              </div>
+            ) : props.settingsError ? (
+              <div className="p-6">
+                <ErrorState
+                  title="FAILED_TO_LOAD_SETTINGS"
+                  description={props.settingsError}
+                />
+              </div>
+            ) : props.settings ? (
+              <SettingsTab
+                key={props.settings.updatedAt}
+                settings={props.settings}
+                onSave={props.onSaveSettings}
+                isSaving={props.isSavingSettings}
+              />
+            ) : (
+              <div className="p-6 text-terminalMuted">
+                Settings are unavailable.
+              </div>
+            )
           )}
         </div>
       </main>

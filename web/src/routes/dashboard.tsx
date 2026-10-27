@@ -9,14 +9,43 @@ import {
   deleteRoute,
   generateRoutes,
   generatePredictiveRoutes,
+  generateOrganicRoutes,
   getActiveRoutes,
   getRoutes,
   simulateNextDay,
   resetBinsToZero,
 } from '../features/routes/api';
+import {
+  confirmDelivery,
+  createCollection,
+  getCollections,
+  getImpactSummary,
+} from '../features/collections/api';
+import type { CollectionPayload } from '../features/collections/api';
+import { getDestinations } from '../features/destinations/api';
 import { queryClient } from '../lib/query-client';
 import { AdminShell } from '../components/admin/admin-shell';
 import { DriverShell } from '../components/driver/driver-shell';
+
+import {
+  getSettings,
+  updateSettings,
+} from '../features/settings/api';
+
+import type {
+  UpdateSettingsRequest,
+} from '../features/settings/api';
+
+
+import {
+  createGenerator,
+  updateGenerator,
+} from '../features/bins/api';
+
+import type {
+  GeneratorPayload,
+} from '../features/bins/api';
+
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -28,11 +57,63 @@ export function DashboardPage() {
   const isDriver = user?.role === 'DRIVER';
   const canQuery = Boolean(user);
 
+
+  const settingsQuery = useQuery({
+    queryKey: ['settings'],
+    queryFn: getSettings,
+    enabled: canQuery && isAdmin,
+  });
+
+  const settingsMutation = useMutation({
+    mutationFn: (
+      data: UpdateSettingsRequest,
+    ) => updateSettings(data),
+
+    onSuccess: (updatedSettings) => {
+      queryClient.setQueryData(
+        ['settings'],
+        updatedSettings,
+      );
+
+      queryClient.invalidateQueries({
+        queryKey: ['bins'],
+      });
+    },
+  });
+
+
   const binsQuery = useQuery({
     queryKey: ['bins', { limit: 100, offset: 0 }],
     queryFn: () => getBins(100, 0),
     enabled: canQuery,
   });
+
+
+const createGeneratorMutation = useMutation({
+  mutationFn: createGenerator,
+
+  onSuccess: () => {
+    queryClient.invalidateQueries({
+      queryKey: ['bins'],
+    });
+  },
+});
+
+const updateGeneratorMutation = useMutation({
+  mutationFn: ({
+    id,
+    data,
+  }: {
+    id: string;
+    data: GeneratorPayload;
+  }) => updateGenerator(id, data),
+
+  onSuccess: () => {
+    queryClient.invalidateQueries({
+      queryKey: ['bins'],
+    });
+  },
+});
 
   const criticalBinsQuery = useQuery({
     queryKey: ['bins', 'critical'],
@@ -50,6 +131,24 @@ export function DashboardPage() {
     queryKey: ['routes', 'active'],
     queryFn: getActiveRoutes,
     enabled: canQuery,
+  });
+
+  const destinationsQuery = useQuery({
+    queryKey: ['destinations'],
+    queryFn: getDestinations,
+    enabled: canQuery && isAdmin,
+  });
+
+  const collectionsQuery = useQuery({
+    queryKey: ['collections'],
+    queryFn: getCollections,
+    enabled: canQuery && isAdmin,
+  });
+
+  const impactQuery = useQuery({
+    queryKey: ['collections', 'impact'],
+    queryFn: getImpactSummary,
+    enabled: canQuery && isAdmin,
   });
 
   const operatorAccountsQuery = useQuery({
@@ -96,6 +195,36 @@ export function DashboardPage() {
     },
     onError: (error) => {
       addLog(`< [ERR] ${(error as Error).message}`);
+    },
+  });
+
+  const generateOrganicMutation = useMutation({
+    mutationFn: generateOrganicRoutes,
+    onSuccess: (data) => {
+      addLog(`< [OK] organic route(s) generated: ${data.length}`);
+      queryClient.invalidateQueries({ queryKey: ['routes'] });
+      queryClient.invalidateQueries({ queryKey: ['routes', 'active'] });
+      queryClient.invalidateQueries({ queryKey: ['bins'] });
+      queryClient.invalidateQueries({ queryKey: ['bins', 'critical'] });
+    },
+    onError: (error) => addLog(`< [ERR] ${(error as Error).message}`),
+  });
+
+  const createCollectionMutation = useMutation({
+    mutationFn: createCollection,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['collections'] });
+      queryClient.invalidateQueries({ queryKey: ['collections', 'impact'] });
+      queryClient.invalidateQueries({ queryKey: ['bins'] });
+      queryClient.invalidateQueries({ queryKey: ['bins', 'critical'] });
+    },
+  });
+
+  const deliveryMutation = useMutation({
+    mutationFn: confirmDelivery,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['collections'] });
+      queryClient.invalidateQueries({ queryKey: ['collections', 'impact'] });
     },
   });
 
@@ -204,6 +333,15 @@ export function DashboardPage() {
     addLog('< [OK] Surge injected: 4 bins escalated to critical fill (≥85%)');
   };
 
+  const runGenerateOrganic = () => {
+    if (!assignedVehicleId) {
+      addLog('< [ERR] select a vehicle first');
+      return;
+    }
+    addLog('> POST /routes/generate-organic');
+    generateOrganicMutation.mutate({ assignedCarId: assignedVehicleId });
+  };
+
   if (!user) return null;
 
   if (isDriver) {
@@ -227,6 +365,35 @@ export function DashboardPage() {
   return (
     <AdminShell
       user={user}
+
+onCreateGenerator={async (data) => {
+  await createGeneratorMutation.mutateAsync(data);
+}}
+
+onUpdateGenerator={async (id, data) => {
+  await updateGeneratorMutation.mutateAsync({
+    id,
+    data,
+  });
+}}
+
+isSavingGenerator={
+  createGeneratorMutation.isPending ||
+  updateGeneratorMutation.isPending
+}
+
+      settings={settingsQuery.data ?? null}
+      settingsLoading={settingsQuery.isLoading}
+      settingsError={
+        settingsQuery.isError
+          ? (settingsQuery.error as Error).message
+          : null
+      }
+      onSaveSettings={(data) =>
+        settingsMutation.mutateAsync(data).then(() => {})
+      }
+      isSavingSettings={settingsMutation.isPending}
+
       bins={bins}
       binsLoading={binsQuery.isLoading}
       binsError={binsQuery.isError ? (binsQuery.error as Error).message : null}
@@ -241,6 +408,7 @@ export function DashboardPage() {
       onChangeAssignedVehicle={setAssignedVehicleId}
       onGenerate={runGenerate}
       onGeneratePredictive={runGeneratePredictive}
+      onGenerateOrganic={runGenerateOrganic}
       onCompleteRoute={(id) => completeMutation.mutate(id)}
       onDeleteRoute={(id) => deleteRouteMutation.mutate(id)}
       onSimulateDay={() => simulateMutation.mutateAsync()}
@@ -249,11 +417,29 @@ export function DashboardPage() {
       onEmptyBin={(binId) => collectBinMutation.mutate(binId)}
       isPendingGenerate={generateMutation.isPending}
       isPendingPredictive={generatePredictiveMutation.isPending}
+      isPendingOrganic={generateOrganicMutation.isPending}
       completePending={completeMutation.isPending}
       deletePending={deleteRouteMutation.isPending}
       isPendingSimulate={simulateMutation.isPending}
       isPendingReset={resetMutation.isPending}
       actionLog={actionLog}
+      destinations={destinationsQuery.data ?? []}
+      collections={collectionsQuery.data ?? []}
+      impact={impactQuery.data ?? null}
+      operationsError={
+        collectionsQuery.isError
+          ? (collectionsQuery.error as Error).message
+          : impactQuery.isError
+            ? (impactQuery.error as Error).message
+            : null
+      }
+      onCreateCollection={(payload: CollectionPayload) =>
+        createCollectionMutation.mutateAsync(payload).then(() => {})
+      }
+      onConfirmDelivery={(id) => deliveryMutation.mutateAsync(id).then(() => {})}
+      isSavingCollection={
+        createCollectionMutation.isPending || deliveryMutation.isPending
+      }
       onLogout={logout}
     />
   );

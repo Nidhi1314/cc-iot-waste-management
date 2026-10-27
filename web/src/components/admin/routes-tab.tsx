@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Trash2,
   Navigation,
+  Leaf,
 } from 'lucide-react';
 import type { RouteItem, VehiclePublic, SmartBin } from '../../types/api';
 import { formatDateTime } from '../../lib/utils';
@@ -18,10 +19,12 @@ type Props = {
   onChangeAssignedVehicle: (id: string) => void;
   onGenerate: () => void;
   onGeneratePredictive: () => void;
+  onGenerateOrganic: () => void;
   onCompleteRoute: (id: string) => void;
   onDeleteRoute: (id: string) => void;
   isPending: boolean;
   isPredictivePending: boolean;
+  isOrganicPending: boolean;
   completePending: boolean;
   deletePending: boolean;
   actionLog: string[];
@@ -35,10 +38,12 @@ export function RoutesTab({
   onChangeAssignedVehicle,
   onGenerate,
   onGeneratePredictive,
+  onGenerateOrganic,
   onCompleteRoute,
   onDeleteRoute,
   isPending,
   isPredictivePending,
+  isOrganicPending,
   completePending,
   deletePending,
   actionLog,
@@ -50,7 +55,7 @@ export function RoutesTab({
 
   const selectedRoute = routes.find((r) => r.id === selectedRouteId) ?? routes[0] ?? null;
   const binsById = new Map(bins.map((b) => [b.id, b]));
-  const isAnyPending = isPending || isPredictivePending || completePending || deletePending;
+  const isAnyPending = isPending || isPredictivePending || isOrganicPending || completePending || deletePending;
 
   return (
     <div className="flex h-full flex-col gap-5 overflow-auto p-6 max-w-7xl mx-auto bg-[#F8FAF6] text-[#0F172A]">
@@ -90,6 +95,17 @@ export function RoutesTab({
               ))}
             </select>
           </div>
+
+          <button
+            className="flex items-center gap-2 rounded-md border border-[#2D6A4F] bg-[#F0FDF4] px-4 py-2 text-xs font-semibold text-[#1B4332] hover:bg-[#DCFCE7] disabled:cursor-not-allowed disabled:opacity-40 transition shadow-sm"
+            disabled={isAnyPending || !assignedVehicleId}
+            onClick={onGenerateOrganic}
+            type="button"
+            title="Optimize route matching generators to licensed organic processing facilities"
+          >
+            <Leaf className="h-3.5 w-3.5 text-[#2D6A4F]" />
+            <span>{isOrganicPending ? 'Optimizing Organic...' : 'Optimize Organic Route'}</span>
+          </button>
 
           <button
             className="flex items-center gap-2 rounded-md bg-[#1B4332] px-4 py-2 text-xs font-semibold text-white hover:bg-[#143527] disabled:cursor-not-allowed disabled:opacity-40 transition shadow-sm"

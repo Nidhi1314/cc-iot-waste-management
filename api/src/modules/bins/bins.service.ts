@@ -4,8 +4,10 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+
 import { BinsRepository } from './bins.repository';
 import { SmartBin } from './bins.schema';
+
 import { CreateBinDto, UpdateBinDto, UpdateFillLevelDto } from './bins.dto';
 
 @Injectable()
@@ -18,8 +20,9 @@ export class BinsService {
 
   async findById(id: string): Promise<SmartBin> {
     const bin = await this.binsRepository.findById(id);
+
     if (!bin) {
-      throw new NotFoundException(`Bin with id ${id} not found`);
+      throw new NotFoundException(`Generator with id ${id} not found`);
     }
 
     return bin;
@@ -30,6 +33,8 @@ export class BinsService {
   }
 
   async create(dto: CreateBinDto): Promise<SmartBin> {
+    this.validatePickupWindow(dto.pickupWindowStart, dto.pickupWindowEnd);
+
     const created = await this.binsRepository.create({
       address: dto.address,
       latitude: dto.latitude,
@@ -37,10 +42,21 @@ export class BinsService {
       totalDepthCm: dto.totalDepthCm,
       maxCapacityKg: dto.maxCapacityKg,
       status: dto.status,
+
+      generatorName: dto.generatorName,
+      generatorType: dto.generatorType,
+      wasteCategory: dto.wasteCategory,
+      estDailyKg: dto.estDailyKg,
+      pickupWindowStart: dto.pickupWindowStart,
+      pickupWindowEnd: dto.pickupWindowEnd,
+      contactName: dto.contactName,
+      contactPhone: dto.contactPhone,
     });
+
     if (!created) {
-      throw new InternalServerErrorException('Failed to create bin');
+      throw new InternalServerErrorException('Failed to create generator');
     }
+
     return created;
   }
 
@@ -51,7 +67,12 @@ export class BinsService {
       );
     }
 
-    await this.findById(id);
+    const existing = await this.findById(id);
+
+    this.validatePickupWindow(
+      dto.pickupWindowStart ?? existing.pickupWindowStart ?? undefined,
+      dto.pickupWindowEnd ?? existing.pickupWindowEnd ?? undefined,
+    );
 
     const updated = await this.binsRepository.update(id, {
       address: dto.address,
@@ -60,12 +81,21 @@ export class BinsService {
       totalDepthCm: dto.totalDepthCm,
       maxCapacityKg: dto.maxCapacityKg,
       status: dto.status,
+
+      generatorName: dto.generatorName,
+      generatorType: dto.generatorType,
+      wasteCategory: dto.wasteCategory,
+      estDailyKg: dto.estDailyKg,
+      pickupWindowStart: dto.pickupWindowStart,
+      pickupWindowEnd: dto.pickupWindowEnd,
+      contactName: dto.contactName,
+      contactPhone: dto.contactPhone,
     });
+
     if (!updated) {
-      throw new InternalServerErrorException(
-        `Failed to update bin with id ${id}`,
-      );
+      throw new InternalServerErrorException('Failed to update generator');
     }
+
     return updated;
   }
 
@@ -79,11 +109,11 @@ export class BinsService {
       id,
       dto.fillLevel,
     );
+
     if (!updated) {
-      throw new InternalServerErrorException(
-        `Failed to update fill level for bin with id ${id}`,
-      );
+      throw new InternalServerErrorException('Failed to update fill level');
     }
+
     return updated;
   }
 
@@ -91,11 +121,23 @@ export class BinsService {
     await this.findById(id);
 
     const deleted = await this.binsRepository.delete(id);
+
     if (!deleted) {
-      throw new InternalServerErrorException(
-        `Failed to delete bin with id ${id}`,
+      throw new InternalServerErrorException('Failed to delete generator');
+    }
+
+    return deleted;
+  }
+
+  private validatePickupWindow(start?: string, end?: string): void {
+    if ((start && !end) || (!start && end)) {
+      throw new BadRequestException(
+        'Both pickup start and end times are required',
       );
     }
-    return deleted;
+
+    if (start && end && start >= end) {
+      throw new BadRequestException('Pickup end time must be after start time');
+    }
   }
 }

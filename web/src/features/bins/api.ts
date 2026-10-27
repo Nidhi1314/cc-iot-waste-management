@@ -15,3 +15,46 @@ export function updateBinFillLevel(id: string, fillLevel: number) {
     body: { fillLevel },
   });
 }
+
+import type {
+  BinStatus,
+  GeneratorType,
+  WasteCategory,
+} from '../../types/api';
+
+export type GeneratorPayload = {
+  address: string;
+  latitude: number;
+  longitude: number;
+  totalDepthCm: number;
+  maxCapacityKg: number;
+  status: BinStatus;
+  generatorName: string;
+  generatorType: GeneratorType;
+  wasteCategory: WasteCategory;
+  estDailyKg: number;
+  pickupWindowStart: string;
+  pickupWindowEnd: string;
+  contactName?: string;
+  contactPhone?: string;
+};
+
+export function createGenerator(
+  data: GeneratorPayload,
+): Promise<SmartBin> {
+  return apiRequest<SmartBin>('/bins', {
+    method: 'POST',
+    body: data,
+  });
+}
+
+export function updateGenerator(
+  id: string,
+  data: GeneratorPayload,
+): Promise<SmartBin> {
+  return apiRequest<SmartBin>(`/bins/${id}`, {
+    method: 'PATCH',
+    body: data,
+  });
+}
+

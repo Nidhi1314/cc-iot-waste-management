@@ -18,7 +18,7 @@ function getResultMessage(status: string | undefined, action: 'simulate' | 'rese
   }
 
   return action === 'simulate'
-    ? 'Simulation successful: time advanced by one day and bin fill levels increased.'
+    ? 'Simulation successful: generator-specific fill and sensor readings were recorded for the next day.'
     : 'Reset successful: all bin fill levels are now 0%.';
 }
 
@@ -84,7 +84,8 @@ export function SimulationTab({
             </h2>
           </div>
           <p className="text-xs leading-relaxed text-[#475569]">
-            Increments all 50 smart bins by 5–25% randomly, updating sensor telemetry and flagging units $\ge 75\%$ as critical overfill.
+            Simulates 24 hours of waste generation using each generator type, capacity, and waste category.
+            A sensor reading is recorded for every active generator using the configured collection threshold.
           </p>
 
           <button

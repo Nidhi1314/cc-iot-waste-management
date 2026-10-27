@@ -9,7 +9,7 @@ Built with **FastAPI**, this microservice seamlessly communicates with the Neon 
 ## 🛠️ Core Technologies
 * **Framework:** FastAPI (Python 3)
 * **Routing Algorithm:** Google OR-Tools (Capacitated Vehicle Routing Problem - CVRP)
-* **Machine Learning:** Scikit-Learn (Random Forest Regressor), Pandas, Joblib
+* **Machine Learning:** Scikit-Learn (generator-aware Random Forest Regressor), Pandas, Joblib
 * **Database Driver:** `psycopg2` (PostgreSQL)
 
 ---
@@ -37,13 +37,13 @@ This is the traditional, reactive approach to waste management. We only collect 
 This is the advanced, proactive approach. Instead of waiting for bins to overflow, the system predicts which bins *will* be full in the near future and routes the truck there in advance.
 * **Training (`POST /ml/train-model`):** 
   * We generate 90 days of synthetic historical sensor data (`seed_ml_data.py`).
-  * The algorithm uses **Pandas** to extract features like `hour_of_day`, `is_weekend`, and `bin_id_encoded`.
-  * A **Random Forest Regressor** is trained to understand the specific filling pattern of each unique bin (e.g., "Bin A fills up fast on Friday nights", "Bin B fills slowly on weekdays").
-  * The model is saved to disk as `rf_model.pkl` alongside a label encoder `le_bin_id.pkl`.
+  * The algorithm joins sensor history to generator metadata and extracts generator type, waste category, estimated daily kilograms, hour, and weekday/weekend features.
+  * A **Random Forest Regressor** forecasts fill increase per hour from generator attributes.
+  * A time-ordered holdout reports MAE and RMSE (and R² when enough holdout samples exist); the model and evaluation metadata are saved under `models/`.
 * **Predicting & Routing (`POST /ml/run-predictive-demo-cvrp`):**
-  * You specify a time horizon (e.g., `+24 hours`).
-  * The system looks at the *current* fill level of all bins.
-  * It feeds the current time and bin IDs into the ML model to predict how much waste will be deposited in the next 24 hours.
+  * You specify a time horizon (1 to 168 hours).
+  * The system looks at the *current* fill level of all generators.
+  * It feeds generator type, waste category, expected daily waste, and target time into the ML model to predict how much waste will be deposited during the requested horizon.
   * `Future_Fill_Level = Current_Fill + Predicted_Increase`
   * If the `Future_Fill_Level >= 80%`, the bin is proactively added to the route.
   * The CVRP algorithm then optimizes this future-proof route and saves it to the database.
@@ -123,7 +123,7 @@ The **Admin Dashboard** connects directly to the FastAPI engine (via NestJS) to 
    cd wastewise-algorithm
    fastapi dev main.py --port 8000
    ```
-   *The server will start at `http://localhost:8000`. You can visit `http://localhost:8000/docs` to see the interactive Swagger UI and test the endpoints.*
+   *The standalone server will start at `http://localhost:8000`. You can visit `http://localhost:8000/docs` to see the interactive Swagger UI and test the endpoints.*
 
 ## 🧪 Quick Test Flow for Jury
 1. Ensure the ML model is trained (run `seed_ml_data.py` once to generate DB data and `rf_model.pkl`).

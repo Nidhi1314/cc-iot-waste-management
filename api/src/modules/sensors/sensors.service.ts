@@ -1,24 +1,34 @@
 import {
   Injectable,
+  Inject,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+
+import { eq, sql } from 'drizzle-orm';
+
 import { DRIZZLE } from '../../infrastructure/database/database.module';
 import { type DrizzleClient } from '../../infrastructure/database/db';
+
 import { SensorsRepository } from './sensors.repository';
 import { BinsService } from '../bins/bins.service';
+import { SettingsService } from '../settings/settings.service';
+
 import { CreateSensorDataDto } from './sensors.dto';
 import { SensorData } from './sensors.schema';
 import { smartBins } from '../bins/bins.schema';
-import { Inject } from '@nestjs/common';
 
 @Injectable()
 export class SensorsService {
   constructor(
-    @Inject(DRIZZLE) private readonly db: DrizzleClient,
+    @Inject(DRIZZLE)
+    private readonly db: DrizzleClient,
+
     private readonly sensorsRepository: SensorsRepository,
+
     private readonly binsService: BinsService,
+
+    private readonly settingsService: SettingsService,
   ) {}
 
   async recordReadings(dto: CreateSensorDataDto): Promise<SensorData> {
@@ -39,11 +49,28 @@ export class SensorsService {
       }
 
       const fillLevel = Math.round(dto.fillPercentage);
+
+      const settings = await this.settingsService.getSettings();
+      const ageCutoff = new Date(
+        Date.now() - settings.maxWasteAgeHours * 60 * 60 * 1000,
+      );
+
       const updatedBin = await this.db
         .update(smartBins)
         .set({
           currentFillLevel: fillLevel,
-          needsCollection: fillLevel >= 75,
+          needsCollection: sql`(
+            ${fillLevel} >= ${settings.fillThreshold}
+            OR (
+              ${fillLevel} > 0
+              AND COALESCE(${smartBins.fillStartedAt}, ${smartBins.lastUpdated}) <= ${ageCutoff}
+            )
+          )`,
+          fillStartedAt: sql`CASE
+            WHEN ${fillLevel} = 0 THEN NULL
+            WHEN ${smartBins.currentFillLevel} = 0 THEN now()
+          ELSE COALESCE(${smartBins.fillStartedAt}, ${smartBins.lastUpdated})
+          END`,
           lastUpdated: new Date(),
         })
         .where(eq(smartBins.id, dto.binId))
@@ -60,6 +87,7 @@ export class SensorsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
+
       throw new InternalServerErrorException(
         'Failed to process sensor reading',
       );
@@ -73,6 +101,7 @@ export class SensorsService {
 
   async getRecentByBinId(binId: string, limit: number): Promise<SensorData[]> {
     await this.binsService.findById(binId);
+
     return this.sensorsRepository.findRecentByBinId(binId, limit);
   }
 }
