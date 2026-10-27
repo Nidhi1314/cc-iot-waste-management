@@ -22,6 +22,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/infrastructure/database/seed.ts",
+    "db:localize-bins-india": "tsx src/infrastructure/database/localize-bins-india.ts",
+    "db:seed-organic-generators": "tsx src/infrastructure/database/seed-organic-generators.ts",
+    "db:seed-destinations": "tsx src/infrastructure/database/seed-destinations.ts",
     "db:translate-bin-addresses": "tsx src/infrastructure/database/translate-bin-addresses.ts"
   },
   "dependencies": {

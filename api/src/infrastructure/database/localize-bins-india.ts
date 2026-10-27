@@ -19,19 +19,19 @@ const db = drizzle(neon(databaseUrl));
 // These are NOT real registered waste-bin installations.
 const locationMappings = [
   {
-    oldAddress: 'Central Plaza, Istanbul',
+    oldAddress: 'Kadikoy Square, Istanbul',
     newAddress: 'Connaught Place, New Delhi',
     latitude: 28.6315,
     longitude: 77.2167,
   },
   {
-    oldAddress: 'Main Street No:45, Istanbul',
+    oldAddress: 'Bagdat Avenue No. 45, Istanbul',
     newAddress: 'Karol Bagh, New Delhi',
     latitude: 28.6519,
     longitude: 77.1909,
   },
   {
-    oldAddress: 'Coastal Park, Istanbul',
+    oldAddress: 'Moda Seaside Park, Istanbul',
     newAddress: 'India Gate Area, New Delhi',
     latitude: 28.6129,
     longitude: 77.2295,
