@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { desc, eq } from 'drizzle-orm';
+
 import { DRIZZLE } from '../../infrastructure/database/database.module';
 import { type DrizzleClient } from '../../infrastructure/database/db';
+
 import {
   smartBins,
   NewSmartBin,
@@ -9,9 +11,16 @@ import {
   SmartBin,
 } from './bins.schema';
 
+import { SettingsService } from '../settings/settings.service';
+
 @Injectable()
 export class BinsRepository {
-  constructor(@Inject(DRIZZLE) private readonly db: DrizzleClient) {}
+  constructor(
+    @Inject(DRIZZLE)
+    private readonly db: DrizzleClient,
+
+    private readonly settingsService: SettingsService,
+  ) {}
 
   async findAll(limit: number, offset: number): Promise<SmartBin[]> {
     return this.db
@@ -28,6 +37,7 @@ export class BinsRepository {
       .from(smartBins)
       .where(eq(smartBins.id, id))
       .limit(1);
+
     return result[0];
   }
 
@@ -40,6 +50,7 @@ export class BinsRepository {
 
   async create(data: NewSmartBin): Promise<SmartBin> {
     const result = await this.db.insert(smartBins).values(data).returning();
+
     return result[0];
   }
 
@@ -52,6 +63,7 @@ export class BinsRepository {
       .set(data)
       .where(eq(smartBins.id, id))
       .returning();
+
     return result[0];
   }
 
@@ -59,15 +71,18 @@ export class BinsRepository {
     id: string,
     fillLevel: number,
   ): Promise<SmartBin | undefined> {
+    const threshold = await this.settingsService.getFillThreshold();
+
     const result = await this.db
       .update(smartBins)
       .set({
         currentFillLevel: fillLevel,
-        needsCollection: fillLevel >= 75,
+        needsCollection: fillLevel >= threshold,
         lastUpdated: new Date(),
       })
       .where(eq(smartBins.id, id))
       .returning();
+
     return result[0];
   }
 
@@ -76,6 +91,7 @@ export class BinsRepository {
       .delete(smartBins)
       .where(eq(smartBins.id, id))
       .returning();
+
     return result[0];
   }
 }

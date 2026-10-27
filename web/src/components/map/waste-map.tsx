@@ -78,8 +78,8 @@ export function WasteMap({
   }, [route, bins, completedBinIds]);
 
   const center: [number, number] = bins.length > 0
-    ? [bins[0].latitude, bins[0].longitude]
-    : [40.758, -73.9855];
+  ? [bins[0].latitude, bins[0].longitude]
+  : [28.6139, 77.2090];
 
   // OSRM state and fetching logic
   const [realRoutePolyline, setRealRoutePolyline] = useState<[number, number][]>([]);

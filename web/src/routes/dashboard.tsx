@@ -18,6 +18,26 @@ import { queryClient } from '../lib/query-client';
 import { AdminShell } from '../components/admin/admin-shell';
 import { DriverShell } from '../components/driver/driver-shell';
 
+import {
+  getSettings,
+  updateSettings,
+} from '../features/settings/api';
+
+import type {
+  UpdateSettingsRequest,
+} from '../features/settings/api';
+
+
+import {
+  createGenerator,
+  updateGenerator,
+} from '../features/bins/api';
+
+import type {
+  GeneratorPayload,
+} from '../features/bins/api';
+
+
 export function DashboardPage() {
   const navigate = useNavigate();
   const { user, clearSession } = useSession();
@@ -28,11 +48,63 @@ export function DashboardPage() {
   const isDriver = user?.role === 'DRIVER';
   const canQuery = Boolean(user);
 
+
+  const settingsQuery = useQuery({
+    queryKey: ['settings'],
+    queryFn: getSettings,
+    enabled: canQuery && isAdmin,
+  });
+
+  const settingsMutation = useMutation({
+    mutationFn: (
+      data: UpdateSettingsRequest,
+    ) => updateSettings(data),
+
+    onSuccess: (updatedSettings) => {
+      queryClient.setQueryData(
+        ['settings'],
+        updatedSettings,
+      );
+
+      queryClient.invalidateQueries({
+        queryKey: ['bins'],
+      });
+    },
+  });
+
+
   const binsQuery = useQuery({
     queryKey: ['bins', { limit: 100, offset: 0 }],
     queryFn: () => getBins(100, 0),
     enabled: canQuery,
   });
+
+
+const createGeneratorMutation = useMutation({
+  mutationFn: createGenerator,
+
+  onSuccess: () => {
+    queryClient.invalidateQueries({
+      queryKey: ['bins'],
+    });
+  },
+});
+
+const updateGeneratorMutation = useMutation({
+  mutationFn: ({
+    id,
+    data,
+  }: {
+    id: string;
+    data: GeneratorPayload;
+  }) => updateGenerator(id, data),
+
+  onSuccess: () => {
+    queryClient.invalidateQueries({
+      queryKey: ['bins'],
+    });
+  },
+});
 
   const criticalBinsQuery = useQuery({
     queryKey: ['bins', 'critical'],
@@ -203,6 +275,35 @@ export function DashboardPage() {
   return (
     <AdminShell
       user={user}
+
+onCreateGenerator={async (data) => {
+  await createGeneratorMutation.mutateAsync(data);
+}}
+
+onUpdateGenerator={async (id, data) => {
+  await updateGeneratorMutation.mutateAsync({
+    id,
+    data,
+  });
+}}
+
+isSavingGenerator={
+  createGeneratorMutation.isPending ||
+  updateGeneratorMutation.isPending
+}
+
+      settings={settingsQuery.data ?? null}
+      settingsLoading={settingsQuery.isLoading}
+      settingsError={
+        settingsQuery.isError
+          ? (settingsQuery.error as Error).message
+          : null
+      }
+      onSaveSettings={(data) =>
+        settingsMutation.mutateAsync(data).then(() => {})
+      }
+      isSavingSettings={settingsMutation.isPending}
+
       bins={bins}
       binsLoading={binsQuery.isLoading}
       binsError={binsQuery.isError ? (binsQuery.error as Error).message : null}

@@ -16,20 +16,52 @@ export type LoginResponse = {
   user: AuthUser;
 };
 
-export type BinStatus = 'ACTIVE' | 'DAMAGED' | 'OUT_OF_SERVICE';
+export type BinStatus =
+  | 'ACTIVE'
+  | 'DAMAGED'
+  | 'OUT_OF_SERVICE';
+
+export type GeneratorType =
+  | 'RESTAURANT'
+  | 'HOTEL'
+  | 'CANTEEN'
+  | 'VEGETABLE_MARKET';
+
+export type WasteCategory =
+  | 'VEG_SCRAPS'
+  | 'COOKED_FOOD'
+  | 'MIXED_ORGANIC';
 
 export type SmartBin = {
   id: string;
   address: string;
   latitude: number;
   longitude: number;
+
   totalDepthCm: number;
   maxCapacityKg: number;
+
   status: BinStatus;
   currentFillLevel: number;
   needsCollection: boolean;
   lastUpdated: string;
+
+  generatorName: string | null;
+  generatorType: GeneratorType | null;
+  wasteCategory: WasteCategory | null;
+
+  estDailyKg: number | null;
+
+  pickupWindowStart: string | null;
+  pickupWindowEnd: string | null;
+
+  fillStartedAt: string | null;
+  lastCollectedAt: string | null;
+
+  contactName: string | null;
+  contactPhone: string | null;
 };
+
 
 export type VehiclePublic = {
   id: string;

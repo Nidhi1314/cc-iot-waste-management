@@ -1,15 +1,18 @@
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as bcrypt from 'bcryptjs';
+import * as dotenv from 'dotenv';
+
 import { smartBins } from '../../modules/bins/bins.schema';
 import { vehicles } from '../../modules/vehicles/vehicles.schema';
 import { sensorData } from '../../modules/sensors/sensors.schema';
 import { routes } from '../../modules/routes/routes.schema';
-import * as dotenv from 'dotenv';
+import { systemSettings } from '../../modules/settings/settings.schema';
 
 dotenv.config({ path: ['../.env', '.env'] });
 
 const databaseUrl = process.env.DATABASE_URL;
+
 if (!databaseUrl) {
   throw new Error('DATABASE_URL is not set in .env');
 }
@@ -17,18 +20,18 @@ if (!databaseUrl) {
 const db = drizzle(neon(databaseUrl));
 
 async function seed() {
-  console.log('🌱 Seeding database...');
+  console.log('Seeding WasteWise Delhi NCR demo data...');
 
-  // Delete order matters — child tables first, then parent tables
-  // routes → vehicles (FK: assigned_car_id)
-  // sensor_data → smart_bins (FK: bin_id, onDelete: cascade — but explicit is safer)
+  // WARNING: Use only on disposable demo databases.
+  // Delete dependent records before their parents.
   await db.delete(routes);
   await db.delete(sensorData);
   await db.delete(smartBins);
   await db.delete(vehicles);
-  console.log('🗑️  Cleared existing data.');
 
-  // ---------- VEHICLES ----------
+  console.log('Existing demo records cleared.');
+
+  // Demo admin and drivers
   const hashedPassword = await bcrypt.hash('wastewise123', 10);
 
   await db.insert(vehicles).values([
@@ -51,88 +54,97 @@ async function seed() {
       maxCapacityKg: 400,
     },
   ]);
-  console.log('✅ Vehicles seeded.');
 
-  // ---------- SMART BINS ----------
-  await db.insert(smartBins).values([
+  console.log('Demo accounts created.');
+
+  // Approximate coordinates for simulated
+  // Delhi NCR waste collection points.
+  const demoBins = [
     {
-      address: 'Central Plaza, Istanbul',
-      latitude: 40.99,
-      longitude: 29.023,
+      address: 'Connaught Place, New Delhi',
+      latitude: 28.6315,
+      longitude: 77.2167,
       totalDepthCm: 80,
       maxCapacityKg: 100,
-      status: 'ACTIVE',
+      status: 'ACTIVE' as const,
       currentFillLevel: 85,
-      needsCollection: true,
     },
     {
-      address: 'Main Street No:45, Istanbul',
-      latitude: 40.9713,
-      longitude: 29.0556,
+      address: 'Karol Bagh, New Delhi',
+      latitude: 28.6519,
+      longitude: 77.1909,
       totalDepthCm: 80,
       maxCapacityKg: 200,
-      status: 'ACTIVE',
+      status: 'ACTIVE' as const,
       currentFillLevel: 75,
-      needsCollection: true,
     },
     {
-      address: 'Coastal Park, Istanbul',
-      latitude: 40.9847,
-      longitude: 29.0285,
+      address: 'India Gate Area, New Delhi',
+      latitude: 28.6129,
+      longitude: 77.2295,
       totalDepthCm: 100,
       maxCapacityKg: 150,
-      status: 'ACTIVE',
+      status: 'ACTIVE' as const,
       currentFillLevel: 100,
-      needsCollection: true,
     },
     {
-      address: 'Feneryolu Station, Istanbul',
-      latitude: 40.9787958,
-      longitude: 29.0488297,
+      address: 'Lajpat Nagar, New Delhi',
+      latitude: 28.5677,
+      longitude: 77.2433,
       totalDepthCm: 80,
       maxCapacityKg: 100,
-      status: 'ACTIVE',
+      status: 'ACTIVE' as const,
       currentFillLevel: 80,
-      needsCollection: true,
     },
     {
-      address: 'Goztepe Metro Station, Istanbul',
-      latitude: 40.9756,
-      longitude: 29.022,
+      address: 'Saket, New Delhi',
+      latitude: 28.5244,
+      longitude: 77.2066,
       totalDepthCm: 120,
       maxCapacityKg: 200,
-      status: 'ACTIVE',
+      status: 'ACTIVE' as const,
       currentFillLevel: 78,
-      needsCollection: true,
     },
     {
-      address: 'Suadiye Beach, Istanbul',
-      latitude: 40.9612,
-      longitude: 29.0681,
+      address: 'Hauz Khas, New Delhi',
+      latitude: 28.5494,
+      longitude: 77.2001,
       totalDepthCm: 90,
       maxCapacityKg: 120,
-      status: 'ACTIVE',
+      status: 'ACTIVE' as const,
       currentFillLevel: 45,
-      needsCollection: false,
     },
     {
-      address: 'Caddebostan Shore, Istanbul',
-      latitude: 40.965,
-      longitude: 29.059,
+      address: 'Nehru Place, New Delhi',
+      latitude: 28.5491,
+      longitude: 77.2533,
       totalDepthCm: 80,
       maxCapacityKg: 100,
-      status: 'OUT_OF_SERVICE',
+      status: 'OUT_OF_SERVICE' as const,
       currentFillLevel: 0,
-      needsCollection: false,
     },
-  ]);
-  console.log('✅ Smart bins seeded.');
+  ];
 
-  console.log('🎉 All done.');
-  process.exit(0);
+  // Read the persisted collection threshold.
+  // This ensures seeded flags respect dashboard settings.
+  const savedSettings = await db.select().from(systemSettings).limit(1);
+
+  const threshold = savedSettings[0]?.fillThreshold ?? 75;
+
+  await db.insert(smartBins).values(
+    demoBins.map((bin) => ({
+      ...bin,
+      needsCollection:
+        bin.status === 'ACTIVE' && bin.currentFillLevel >= threshold,
+    })),
+  );
+
+  console.log('Seven Delhi NCR demo bins created.');
+  console.log(`Collection threshold: ${threshold}%`);
+  console.log('Seed completed successfully.');
 }
 
-seed().catch((err) => {
-  console.error('❌ Seed failed:', err);
-  process.exit(1);
+seed().catch((error) => {
+  console.error('Seed failed:', error);
+  process.exitCode = 1;
 });

@@ -140,9 +140,7 @@ export class RoutesService {
     const criticalBins = await this.binsService.findNeedingCollection();
 
     if (criticalBins.length === 0) {
-      throw new BadRequestException(
-        'No bins need collection at this time. (fill level < 75% for all bins)',
-      );
+      throw new BadRequestException('No bins need collection at this time.');
     }
 
     let algorithmResponse: AlgorithmResponse;

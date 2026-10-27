@@ -7,11 +7,46 @@ import { RoutesTab } from './routes-tab';
 import { OperatorsTab } from './operators-tab';
 import { SimulationTab } from './simulation-tab';
 import { LoadingState, ErrorState } from '../shared/states';
+import type { GeneratorPayload } from '../../features/bins/api';
+import { SettingsTab } from './settings-tab';
+import { DestinationsTab } from './destinations-tab';
 
-type AdminTab = 'overview' | 'map' | 'bins' | 'routes' | 'operators' | 'simulation';
+import type {
+  SystemSettings,
+  UpdateSettingsRequest,
+} from '../../features/settings/api';
+
+type AdminTab =
+  | 'overview'
+  | 'map'
+  | 'bins'
+  | 'destinations'
+  | 'routes'
+  | 'operators'
+  | 'simulation'
+  | 'settings';
 
 type AdminShellProps = {
+
+onCreateGenerator: (
+  data: GeneratorPayload,
+) => Promise<void>;
+
+onUpdateGenerator: (
+  id: string,
+  data: GeneratorPayload,
+) => Promise<void>;
+
+isSavingGenerator: boolean;
+
   user: AuthUser;
+  settings: SystemSettings | null;
+  settingsLoading: boolean;
+  settingsError: string | null;
+  onSaveSettings: (
+    data: UpdateSettingsRequest,
+  ) => Promise<void>;
+  isSavingSettings: boolean;
   bins: SmartBin[];
   binsLoading: boolean;
   binsError: string | null;
@@ -43,10 +78,12 @@ type AdminShellProps = {
 const NAV_ITEMS: { id: AdminTab; icon: string; label: string }[] = [
   { id: 'overview',    icon: '⌂',   label: 'Overview' },
   { id: 'map',         icon: '◈',   label: 'Surveillance' },
-  { id: 'bins',        icon: '⬡',   label: 'Bins' },
+  { id: 'bins', icon: '⬡', label: 'Generators' },
   { id: 'routes',      icon: '⟳',   label: 'Routes' },
   { id: 'operators',   icon: '⚙',   label: 'Operators' },
   { id: 'simulation',  icon: '◎',   label: 'Simulation' },
+  { id: 'settings', icon: '⚙', label: 'Settings' },
+  { id: 'destinations', icon: '⌖', label: 'Destinations' },
 ];
 
 export function AdminShell(props: AdminShellProps) {
@@ -180,9 +217,20 @@ export function AdminShell(props: AdminShellProps) {
             ) : props.binsError ? (
               <div className="p-6"><ErrorState title="FAILED_TO_LOAD_BINS" description={props.binsError} /></div>
             ) : (
-              <BinsTab bins={props.bins} />
+              
+<BinsTab
+  bins={props.bins}
+  onCreate={props.onCreateGenerator}
+  onUpdate={props.onUpdateGenerator}
+  isSaving={props.isSavingGenerator}
+/>
+
             )
           )}
+
+{activeTab === 'destinations' && (
+  <DestinationsTab />
+)}
 
           {activeTab === 'routes' && (
             props.routesLoading ? (
@@ -224,6 +272,31 @@ export function AdminShell(props: AdminShellProps) {
               isPendingSimulate={props.isPendingSimulate}
               isPendingReset={props.isPendingReset}
             />
+          )}
+
+{activeTab === 'settings' && (
+            props.settingsLoading ? (
+              <div className="p-6">
+                <LoadingState title="LOADING_SETTINGS" />
+              </div>
+            ) : props.settingsError ? (
+              <div className="p-6">
+                <ErrorState
+                  title="FAILED_TO_LOAD_SETTINGS"
+                  description={props.settingsError}
+                />
+              </div>
+            ) : props.settings ? (
+              <SettingsTab
+                settings={props.settings}
+                onSave={props.onSaveSettings}
+                isSaving={props.isSavingSettings}
+              />
+            ) : (
+              <div className="p-6 text-terminalMuted">
+                Settings are unavailable.
+              </div>
+            )
           )}
         </div>
       </main>

@@ -1,24 +1,34 @@
 import {
   Injectable,
+  Inject,
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
+
 import { eq } from 'drizzle-orm';
+
 import { DRIZZLE } from '../../infrastructure/database/database.module';
 import { type DrizzleClient } from '../../infrastructure/database/db';
+
 import { SensorsRepository } from './sensors.repository';
 import { BinsService } from '../bins/bins.service';
+import { SettingsService } from '../settings/settings.service';
+
 import { CreateSensorDataDto } from './sensors.dto';
 import { SensorData } from './sensors.schema';
 import { smartBins } from '../bins/bins.schema';
-import { Inject } from '@nestjs/common';
 
 @Injectable()
 export class SensorsService {
   constructor(
-    @Inject(DRIZZLE) private readonly db: DrizzleClient,
+    @Inject(DRIZZLE)
+    private readonly db: DrizzleClient,
+
     private readonly sensorsRepository: SensorsRepository,
+
     private readonly binsService: BinsService,
+
+    private readonly settingsService: SettingsService,
   ) {}
 
   async recordReadings(dto: CreateSensorDataDto): Promise<SensorData> {
@@ -39,11 +49,14 @@ export class SensorsService {
       }
 
       const fillLevel = Math.round(dto.fillPercentage);
+
+      const threshold = await this.settingsService.getFillThreshold();
+
       const updatedBin = await this.db
         .update(smartBins)
         .set({
           currentFillLevel: fillLevel,
-          needsCollection: fillLevel >= 75,
+          needsCollection: fillLevel >= threshold,
           lastUpdated: new Date(),
         })
         .where(eq(smartBins.id, dto.binId))
@@ -60,6 +73,7 @@ export class SensorsService {
       if (error instanceof NotFoundException) {
         throw error;
       }
+
       throw new InternalServerErrorException(
         'Failed to process sensor reading',
       );
@@ -73,6 +87,7 @@ export class SensorsService {
 
   async getRecentByBinId(binId: string, limit: number): Promise<SensorData[]> {
     await this.binsService.findById(binId);
+
     return this.sensorsRepository.findRecentByBinId(binId, limit);
   }
 }

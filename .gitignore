@@ -18,3 +18,4 @@ api/node_modules/
 api/dist/
 api/build/
 api/.env
+.env.save
